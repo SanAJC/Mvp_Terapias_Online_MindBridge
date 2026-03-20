@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  COORDINATOR
+  THERAPIST
+  PATIENT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELED
+  ABSENT
+}
+
+enum NotificationType {
+  REMINDER
+  CANCELLATION
+  CONFIRMATION
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  therapistProfile TherapistProfile?
+  patientProfile   PatientProfile?
+
+  notifications Notification[]
+}
+
+model TherapistProfile {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+
+  specialization String?
+
+  patients PatientTherapist[]
+  sessions Session[]
+  clinicalNotes ClinicalNote[]
+
+  createdAt DateTime @default(now())
+}
+
+model PatientProfile {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+
+  dateOfBirth DateTime?
+  phone       String?
+
+  therapists PatientTherapist[]
+  sessions   Session[]
+  notes      ClinicalNote[]
+
+  createdAt DateTime @default(now())
+}
+
+model PatientTherapist {
+  id           String @id @default(uuid())
+
+  therapistId  String
+  patientId    String
+
+  therapist TherapistProfile @relation(fields: [therapistId], references: [id])
+  patient   PatientProfile   @relation(fields: [patientId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([therapistId, patientId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+
+  therapistId  String
+  patientId    String
+
+  therapist TherapistProfile @relation(fields: [therapistId], references: [id])
+  patient   PatientProfile   @relation(fields: [patientId], references: [id])
+
+  startTime   DateTime
+  endTime     DateTime
+
+  meetingLink String?
+
+  status SessionStatus @default(SCHEDULED)
+
+  recurrenceRule String?
+
+  attendance SessionAttendance?
+  notes      ClinicalNote[]
+
+  createdAt DateTime @default(now())
+}
+
+model SessionAttendance {
+  id        String @id @default(uuid())
+
+  sessionId String @unique
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  startedAt DateTime?
+  endedAt   DateTime?
+  duration  Int?
+}
+
+model ClinicalNote {
+  id String @id @default(uuid())
+
+  sessionId String
+  patientId String
+  therapistId String
+
+  session   Session           @relation(fields: [sessionId], references: [id])
+  patient   PatientProfile    @relation(fields: [patientId], references: [id])
+  therapist TherapistProfile  @relation(fields: [therapistId], references: [id])
+
+  content String
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  type   NotificationType
+  message String
+
+  status NotificationStatus @default(SENT)
+
+  sentAt DateTime @default(now())
+}
