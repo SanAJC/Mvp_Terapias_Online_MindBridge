@@ -1,26 +1,116 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcryptjs';
+
+/** Campos que devolvemos al cliente (nunca la contraseña). */
+const userPublicSelect = {
+  id: true,
+  email: true,
+  role: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(private readonly prisma: PrismaService) {}
+
+  private async hashPassword(password: string): Promise<string> {
+    const salt = await bcrypt.genSalt();
+    return bcrypt.hash(password, salt);
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async create(createUserDto: CreateUserDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
+    });
+    if (existing) {
+      throw new ConflictException('El email ya está registrado');
+    }
+
+    const password = await this.hashPassword(createUserDto.password);
+
+    return this.prisma.user.create({
+      data: {
+        email: createUserDto.email,
+        password,
+        role: createUserDto.role,
+        isActive: createUserDto.isActive,
+      },
+      select: userPublicSelect,
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: userPublicSelect,
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: userPublicSelect,
+    });
+    if (!user) {
+      throw new NotFoundException(`Usuario con id "${id}" no encontrado`);
+    }
+    return user;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    await this.findOne(id);
+
+    const data: Prisma.UserUpdateInput = {};
+
+    if (updateUserDto.email !== undefined) {
+      data.email = updateUserDto.email;
+    }
+    if (updateUserDto.role !== undefined) {
+      data.role = updateUserDto.role;
+    }
+    if (updateUserDto.isActive !== undefined) {
+      data.isActive = updateUserDto.isActive;
+    }
+    if (updateUserDto.password !== undefined) {
+      data.password = await this.hashPassword(updateUserDto.password);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return this.findOne(id);
+    }
+
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data,
+        select: userPublicSelect,
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('El email ya está en uso');
+      }
+      throw e;
+    }
+  }
+
+  async remove(id: string) {
+    await this.findOne(id);
+    return this.prisma.user.delete({
+      where: { id },
+      select: userPublicSelect,
+    });
   }
 }
