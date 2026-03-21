@@ -4,44 +4,121 @@ import { LoginDto } from './dto/login';
 import { RegisterDto } from './dto/register';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import { RefreshTokenDto } from './dto/refresh-token';
+import { LogoutDto } from './dto/logout';
+import { JwtService } from './utils/jwt_generated';
 
 @Injectable()
 export class AuthService {
     private readonly jwtSecret = process.env.JWT_SECRET ?? '';
+    private readonly jwtRefreshSecret =
+      process.env.JWT_REFRESH_SECRET ?? this.jwtSecret;
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+      private readonly prisma: PrismaService,
+      private readonly jwtService: JwtService,
+    ) {}
+
+    
 
     async hashPassword(password : string): Promise<string> {
         const salt = await bcrypt.genSalt();
         return bcrypt.hash(password, salt);
     }
 
-    async generateToken(userId : string): Promise<string> {
-        return jwt.sign({ userId }, this.jwtSecret, { expiresIn: '1h' });
-    }
 
-     async register( data : RegisterDto): Promise<{token:string }> {
+    async register( data : RegisterDto): Promise<{ accessToken: string; refreshToken: string }> {
         const handlePassword = await this.hashPassword(data.password)
         const user = await this.prisma.user.create({
             data : { email: data.email, password: handlePassword }
         });
 
-        const token = await this.generateToken(user.id);
-        return { token };
+        const accessToken = await this.jwtService.generateAccessToken(user.id);
+        const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
+          user.id,
+        );
+        return { accessToken, refreshToken };
     }
 
-    async login(data : LoginDto): Promise<{ token: string }> {
+    async login(data : LoginDto): Promise<{ accessToken: string; refreshToken: string; data_user: {} }> {
         const user = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (!user || !(await bcrypt.compare(data.password, user.password))) {
           throw new UnauthorizedException('Invalid credentials');
         }
-        const token = await this.generateToken(user.id);
-        return { token };
+        const data_user = { email : user.email, rol : user.role, is_activate: user.isActive}
+        const accessToken = await this.jwtService.generateAccessToken(user.id);
+        const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
+          user.id,
+        );
+        return { accessToken, refreshToken, data_user };
+    }
+
+    async refresh(data: RefreshTokenDto): Promise<{ accessToken: string; refreshToken: string }> {
+        try {
+          const payload = jwt.verify(
+            data.refreshToken,
+            this.jwtRefreshSecret,
+          ) as jwt.JwtPayload;
+
+          if (payload.type !== 'refresh' || !payload.jti || !payload.userId) {
+            throw new UnauthorizedException('Invalid refresh token');
+          }
+
+          const stored = await this.prisma.refreshToken.findFirst({
+            where: {
+              jti: String(payload.jti),
+              tokenHash: this.jwtService.hashToken(data.refreshToken),
+              revoked: false,
+            },
+          });
+
+          if (!stored || stored.expiresAt < new Date()) {
+            throw new UnauthorizedException('Refresh token expired or revoked');
+          }
+
+          await this.prisma.refreshToken.update({
+            where: { id: stored.id },
+            data: { revoked: true },
+          });
+
+          const accessToken = await this.jwtService.generateAccessToken(
+            String(payload.userId),
+          );
+          const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
+            String(payload.userId),
+          );
+
+          return { accessToken, refreshToken };
+        } catch (error) {
+          throw new UnauthorizedException('Invalid refresh token');
+        }
+    }
+
+    async logout(accessToken: string, data: LogoutDto): Promise<{ message: string }> {
+        await this.jwtService.blacklistAccessToken(accessToken, 'logout');
+
+        if (data.refreshToken) {
+          await this.jwtService.revokeRefreshToken(data.refreshToken);
+        }
+
+        return { message: 'Logout successful' };
     }
     
     async validateToken(token: string): Promise<any> {
         try {
-            return jwt.verify(token, this.jwtSecret);
+            const payload = jwt.verify(token, this.jwtSecret) as jwt.JwtPayload;
+            if (payload.type !== 'access' || !payload.jti) {
+              throw new UnauthorizedException('Invalid token type');
+            }
+
+            const blacklisted = await this.prisma.blacklistedToken.findUnique({
+              where: { jti: String(payload.jti) },
+            });
+            if (blacklisted && blacklisted.expiresAt > new Date()) {
+              throw new UnauthorizedException('Token blacklisted');
+            }
+
+            return payload;
         } catch (error) {
             throw new UnauthorizedException('Invalid or expired token');
         }

@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -51,6 +50,29 @@ model User {
   patientProfile   PatientProfile?
 
   notifications Notification[]
+  refreshTokens  RefreshToken[]
+  blacklistedTokens BlacklistedToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tokenHash String
+  jti       String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model BlacklistedToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  jti       String   @unique
+  expiresAt DateTime
+  reason    String?
+  createdAt DateTime @default(now())
 }
 
 model TherapistProfile {
