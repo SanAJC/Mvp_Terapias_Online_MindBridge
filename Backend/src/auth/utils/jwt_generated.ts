@@ -1,9 +1,8 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { randomUUID, createHash } from 'crypto';
-import { RefreshTokenDto } from '../dto/refresh-token';
 import { PrismaService } from 'src/database/prisma.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class JwtService {
@@ -20,9 +19,9 @@ export class JwtService {
         return createHash('sha256').update(token).digest('hex');
     }
 
-    async generateAccessToken(userId: string): Promise<string> {
+    async generateAccessToken(userId: string, role: Role): Promise<string> {
         return jwt.sign(
-          { userId, type: 'access', jti: randomUUID() },
+          { userId, role, type: 'access', jti: randomUUID() },
           this.jwtSecret,
           { expiresIn: this.accessTokenTtl as jwt.SignOptions['expiresIn'] },
         );

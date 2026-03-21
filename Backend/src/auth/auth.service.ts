@@ -33,7 +33,10 @@ export class AuthService {
             data : { email: data.email, password: handlePassword }
         });
 
-        const accessToken = await this.jwtService.generateAccessToken(user.id);
+        const accessToken = await this.jwtService.generateAccessToken(
+          user.id,
+          user.role,
+        );
         const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
           user.id,
         );
@@ -46,7 +49,10 @@ export class AuthService {
           throw new UnauthorizedException('Invalid credentials');
         }
         const data_user = { email : user.email, rol : user.role, is_activate: user.isActive}
-        const accessToken = await this.jwtService.generateAccessToken(user.id);
+        const accessToken = await this.jwtService.generateAccessToken(
+          user.id,
+          user.role,
+        );
         const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
           user.id,
         );
@@ -81,11 +87,19 @@ export class AuthService {
             data: { revoked: true },
           });
 
+          const user = await this.prisma.user.findUnique({
+            where: { id: String(payload.userId) },
+          });
+          if (!user) {
+            throw new UnauthorizedException('User not found');
+          }
+
           const accessToken = await this.jwtService.generateAccessToken(
-            String(payload.userId),
+            user.id,
+            user.role,
           );
           const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
-            String(payload.userId),
+            user.id,
           );
 
           return { accessToken, refreshToken };
@@ -107,7 +121,7 @@ export class AuthService {
     async validateToken(token: string): Promise<any> {
         try {
             const payload = jwt.verify(token, this.jwtSecret) as jwt.JwtPayload;
-            if (payload.type !== 'access' || !payload.jti) {
+            if (payload.type !== 'access' || !payload.jti || !payload.role) {
               throw new UnauthorizedException('Invalid token type');
             }
 

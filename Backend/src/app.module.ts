@@ -10,10 +10,22 @@ import { NotificationsModule } from './api/notifications/notifications.module';
 
 import { AuthMiddleware } from './auth/middlewares/jwt.middleware';
 import { AuthModule } from './auth/auth.module';
+import { RbacModule } from './auth/rbac.module';
 
 
 @Module({
-  imports: [AuthModule,UsersModule, PatientsModule, TherapistsModule, SessionsModule, AttendanceModule, ClinicalNotesModule, ReportsModule, NotificationsModule],
+  imports: [
+    RbacModule,
+    AuthModule,
+    UsersModule,
+    PatientsModule,
+    TherapistsModule,
+    SessionsModule,
+    AttendanceModule,
+    ClinicalNotesModule,
+    ReportsModule,
+    NotificationsModule,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
