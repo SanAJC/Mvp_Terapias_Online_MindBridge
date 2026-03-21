@@ -42,7 +42,7 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
-  role      Role
+  role      Role     @default(PATIENT)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
