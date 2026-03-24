@@ -1,34 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { TherapistsService } from './therapists.service';
-import { CreateTherapistDto } from './dto/create-therapist.dto';
-import { UpdateTherapistDto } from './dto/update-therapist.dto';
+import { AddPatientDto } from './dto/add-patient';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('therapists')
+@UseGuards(RolesGuard)
+@Roles(Role.THERAPIST)
 export class TherapistsController {
   constructor(private readonly therapistsService: TherapistsService) {}
 
-  @Post()
-  create(@Body() createTherapistDto: CreateTherapistDto) {
-    return this.therapistsService.create(createTherapistDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.therapistsService.findAll();
+  @Post('patients')
+  addPatient(@Body() addPatientDto: AddPatientDto) {
+    return this.therapistsService.addPatient(addPatientDto);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.therapistsService.findOne(+id);
+  getTherapist(@Param('id') id: string) {
+    return this.therapistsService.getTherapist(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTherapistDto: UpdateTherapistDto) {
-    return this.therapistsService.update(+id, updateTherapistDto);
+  @Get(':id/patients')
+  getTherapistPatients(@Param('id') id: string) {
+    return this.therapistsService.getTherapistPatients(id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.therapistsService.remove(+id);
+  @Get(':id/sessions')
+  getTherapistSessions(@Param('id') id: string) {
+    return this.therapistsService.getTherapistSessions(id);
+  }
+  @Get(':id/clinical-notes')
+  getTherapistClinicalNotes(@Param('id') id: string) {
+    return this.therapistsService.getTherapistClinicalNotes(id);
   }
 }

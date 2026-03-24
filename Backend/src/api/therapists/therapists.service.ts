@@ -1,26 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { CreateTherapistDto } from './dto/create-therapist.dto';
-import { UpdateTherapistDto } from './dto/update-therapist.dto';
-
+import type { AddPatientDto } from './dto/add-patient';
+import { PrismaService } from '../../database/prisma.service';
 @Injectable()
 export class TherapistsService {
-  create(createTherapistDto: CreateTherapistDto) {
-    return 'This action adds a new therapist';
+  constructor(private readonly prisma: PrismaService) {}
+
+
+  getTherapist(id: string) {
+    return this.prisma.therapistProfile.findUnique({
+      where: { id },
+    });
   }
 
-  findAll() {
-    return `This action returns all therapists`;
+  addPatient(addPatientDto: AddPatientDto) {
+    return this.prisma.patientTherapist.create({
+      data: {
+        therapistId: addPatientDto.therapistId,
+        patientId: addPatientDto.patientId,
+      },
+    });
   }
-
-  findOne(id: number) {
-    return `This action returns a #${id} therapist`;
+  getTherapistPatients(id: string) {
+    return this.prisma.patientTherapist.findMany({
+      where: { therapistId: id },
+    });
   }
-
-  update(id: number, updateTherapistDto: UpdateTherapistDto) {
-    return `This action updates a #${id} therapist`;
+  getTherapistSessions(id: string) {
+    return this.prisma.session.findMany({
+      where: { therapistId: id },
+    });
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} therapist`;
+  getTherapistClinicalNotes(id: string) {
+    return this.prisma.clinicalNote.findMany({
+      where: { therapistId: id },
+    });
   }
 }
