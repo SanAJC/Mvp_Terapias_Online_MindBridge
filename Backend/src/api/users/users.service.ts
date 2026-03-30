@@ -12,6 +12,7 @@ import * as bcrypt from 'bcryptjs';
 /** Campos que devolvemos al cliente (nunca la contraseña). */
 const userPublicSelect = {
   id: true,
+  username: true,
   email: true,
   role: true,
   isActive: true,
@@ -41,6 +42,7 @@ export class UsersService {
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
+        username: createUserDto.username || createUserDto.email.split('@')[0].toLowerCase(),
         password,
         role: createUserDto.role,
         isActive: createUserDto.isActive,
