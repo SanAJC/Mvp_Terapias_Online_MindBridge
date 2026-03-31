@@ -135,24 +135,12 @@ model Session {
 
   status SessionStatus @default(SCHEDULED)
 
-  recurrenceRule String?
-
-  attendance SessionAttendance?
   notes      ClinicalNote[]
 
   createdAt DateTime @default(now())
 }
 
-model SessionAttendance {
-  id        String @id @default(uuid())
 
-  sessionId String @unique
-  session   Session @relation(fields: [sessionId], references: [id])
-
-  startedAt DateTime?
-  endedAt   DateTime?
-  duration  Int?
-}
 
 model ClinicalNote {
   id String @id @default(uuid())

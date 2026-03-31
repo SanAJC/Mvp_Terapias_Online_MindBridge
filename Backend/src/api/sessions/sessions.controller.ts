@@ -9,26 +9,26 @@ export class SessionsController {
 
   @Post()
   create(@Body() createSessionDto: CreateSessionDto) {
-    return this.sessionsService.create(createSessionDto);
+    return this.sessionsService.createSession(createSessionDto);
   }
 
   @Get()
-  findAll() {
-    return this.sessionsService.findAll();
+  GetSessions() {
+    return this.sessionsService.getSessions();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.sessionsService.findOne(+id);
+  GetSession(@Param('id') id: string) {
+    return this.sessionsService.getSession(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto) {
-    return this.sessionsService.update(+id, updateSessionDto);
+    return this.sessionsService.update(id, updateSessionDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.sessionsService.remove(+id);
+    return this.sessionsService.remove(id);
   }
 }
