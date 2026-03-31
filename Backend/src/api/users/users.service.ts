@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -39,13 +39,24 @@ export class UsersService {
 
     const password = await this.hashPassword(createUserDto.password);
 
+    const role = createUserDto.role;
+    const username =
+      createUserDto.username ||
+      createUserDto.email.split('@')[0].toLowerCase();
+
     return this.prisma.user.create({
       data: {
         email: createUserDto.email,
-        username: createUserDto.username || createUserDto.email.split('@')[0].toLowerCase(),
+        username,
         password,
-        role: createUserDto.role,
+        role,
         isActive: createUserDto.isActive,
+        patientProfile:
+          role === Role.PATIENT ? { create: {} } : undefined,
+          therapistProfile:
+          role === Role.THERAPIST
+            ? { create: { specialization: createUserDto.therapistProfile?.specialization } }
+            : undefined,
       },
       select: userPublicSelect,
     });

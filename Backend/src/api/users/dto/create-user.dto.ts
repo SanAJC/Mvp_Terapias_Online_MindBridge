@@ -26,4 +26,8 @@ export class CreateUserDto {
 
   @IsBoolean()
   isActive: boolean;
+
+  // CreateUserDto
+  therapistProfile?: { specialization?: string };
+  patientProfile?: { dateOfBirth?: Date; phone?: string };
 }

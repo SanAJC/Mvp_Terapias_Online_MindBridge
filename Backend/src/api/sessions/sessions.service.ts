@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { PrismaService } from 'src/database/prisma.service';
@@ -8,7 +8,27 @@ import { Prisma } from '@prisma/client';
 export class SessionsService {
   constructor(private readonly prisma:PrismaService){}
 
-  createSession(createSessionDto: CreateSessionDto) {
+  private assertStartTimeNotPastDay(startTime: Date) {
+    const start = new Date(startTime);
+    if (Number.isNaN(start.getTime())) {
+      throw new BadRequestException('startTime inválido');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDay = new Date(start);
+    startDay.setHours(0, 0, 0, 0);
+
+    if (startDay < today) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser de un día que ya pasó',
+      );
+    }
+  }
+
+  async createSession(createSessionDto: CreateSessionDto) {
+    this.assertStartTimeNotPastDay(createSessionDto.startTime);
     return this.prisma.session.create({
       data:{
         therapistId: createSessionDto.therapistId,
@@ -55,6 +75,7 @@ export class SessionsService {
       data.patient = { connect: { id: updateSessionDto.patientId } };
     }
     if (updateSessionDto.startTime !== undefined) {
+      this.assertStartTimeNotPastDay(updateSessionDto.startTime);
       data.startTime = updateSessionDto.startTime;
     }
     if (updateSessionDto.endTime !== undefined) {
