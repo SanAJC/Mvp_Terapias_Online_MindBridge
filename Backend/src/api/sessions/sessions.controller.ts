@@ -2,13 +2,19 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
+import {
+  SessionsCreatePipe,
+  SessionsUpdatePipe,
+} from './pipes/sessions.pipe';
 
 @Controller('sessions')
 export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
   @Post()
-  create(@Body() createSessionDto: CreateSessionDto) {
+  create(
+    @Body(SessionsCreatePipe) createSessionDto: CreateSessionDto,
+  ) {
     return this.sessionsService.createSession(createSessionDto);
   }
 
@@ -23,7 +29,10 @@ export class SessionsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto) {
+  update(
+    @Param('id') id: string,
+    @Body(SessionsUpdatePipe) updateSessionDto: UpdateSessionDto,
+  ) {
     return this.sessionsService.update(id, updateSessionDto);
   }
 
