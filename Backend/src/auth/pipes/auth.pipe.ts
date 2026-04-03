@@ -7,7 +7,7 @@ export class AuthPipe implements PipeTransform {
           throw new BadRequestException('Formato de email inválido');
         }
   
-        if (this.isPasswordValid(value.password)) {
+        if (!this.isPasswordValid(value.password)) {
           throw new BadRequestException('La contraseña debe tener al menos 8 caracteres');
         }
   
