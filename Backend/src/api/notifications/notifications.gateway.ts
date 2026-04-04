@@ -8,27 +8,22 @@ export class NotificationsGateway {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @SubscribeMessage('createNotification')
-  create(@MessageBody() createNotificationDto: CreateNotificationDto) {
-    return this.notificationsService.create(createNotificationDto);
+  create(@MessageBody() userId: string, createNotificationDto: CreateNotificationDto) {
+    return this.notificationsService.create(userId,createNotificationDto);
   }
 
   @SubscribeMessage('findAllNotifications')
-  findAll() {
-    return this.notificationsService.findAll();
+  findAll(@MessageBody() userId: string) {
+    return this.notificationsService.findAll(userId);
   }
 
   @SubscribeMessage('findOneNotification')
-  findOne(@MessageBody() id: number) {
-    return this.notificationsService.findOne(id);
-  }
-
-  @SubscribeMessage('updateNotification')
-  update(@MessageBody() updateNotificationDto: UpdateNotificationDto) {
-    return this.notificationsService.update(updateNotificationDto.id, updateNotificationDto);
+  findOne(@MessageBody() id: string , userId: string) {
+    return this.notificationsService.findOne(id, userId);
   }
 
   @SubscribeMessage('removeNotification')
-  remove(@MessageBody() id: number) {
-    return this.notificationsService.remove(id);
+  remove(@MessageBody() id: string, userId: string) {
+    return this.notificationsService.remove(id, userId);
   }
 }
