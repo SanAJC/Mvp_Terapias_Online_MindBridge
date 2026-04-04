@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { PatientsService } from './patients.service';
-
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('patients')
+@UseGuards(RolesGuard)
+@Roles(Role.PATIENT)
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 
