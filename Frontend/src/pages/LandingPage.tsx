@@ -13,12 +13,6 @@ const features = [
   { icon: Users, title: "Equipo Profesional", desc: "Red de terapeutas certificados especializados en diversas áreas de la salud mental." },
 ];
 
-const testimonials = [
-  { name: "María G.", text: "MindBridge me ayudó a encontrar un terapeuta que realmente entiende mis necesidades. La plataforma es muy fácil de usar.", rating: 5 },
-  { name: "Carlos R.", text: "Las sesiones por telemedicina son increíbles. Puedo continuar mi terapia sin importar dónde me encuentre.", rating: 5 },
-  { name: "Ana L.", text: "Me encanta poder llevar un seguimiento de mi progreso. La agenda es muy intuitiva.", rating: 4 },
-];
-
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] as const } }),
@@ -35,7 +29,6 @@ const LandingPage = () => {
           <Logo />
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Servicios</a>
-            <a href="#testimonials" className="hover:text-foreground transition-colors">Testimonios</a>
             <a href="#cta" className="hover:text-foreground transition-colors">Contacto</a>
           </div>
           <div className="flex items-center gap-3">
@@ -167,7 +160,7 @@ const LandingPage = () => {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-foreground">Próxima Sesión</p>
-                    <p className="text-xs text-muted-foreground">Hoy a las 3:00 PM</p>
+                    <p className="text-xs text-muted-foreground">Agenda hoy</p>
                   </div>
                 </div>
               </motion.div>
@@ -246,33 +239,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
-            <motion.h2 variants={fadeUp} custom={0} className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Lo que dicen nuestros pacientes
-            </motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="text-muted-foreground max-w-xl mx-auto">
-              Miles de personas ya confían en MindBridge para cuidar su salud mental.
-            </motion.p>
-          </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <motion.div key={t.name} variants={fadeUp} custom={i + 2} className="bg-card rounded-xl p-6 border border-border">
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <Star key={j} size={16} className="fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">"{t.text}"</p>
-                <p className="text-sm font-semibold text-foreground">{t.name}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+  
 
       {/* CTA */}
       <section id="cta" className="py-24">
