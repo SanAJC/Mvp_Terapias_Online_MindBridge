@@ -22,14 +22,24 @@ function assertStartTimeNotPastDay(startTime: Date) {
   }
 }
 
+function assertEndTimeAfterStartTime(startTime: Date, endTime: Date) {
+  if (endTime <= startTime) {
+    throw new BadRequestException(
+      'La fecha de fin no puede ser anterior a la fecha de inicio',
+    );
+  }
+}
+
 @Injectable()
 export class SessionsCreatePipe implements PipeTransform<CreateSessionDto, Promise<CreateSessionDto>> {
   constructor(private readonly prisma: PrismaService) {}
 
   async transform(value: CreateSessionDto): Promise<CreateSessionDto> {
     assertStartTimeNotPastDay(value.startTime);
+    assertEndTimeAfterStartTime(value.startTime, value.endTime);
     await this.assertTherapist(value.therapistId);
     await this.assertPatient(value.patientId);
+    await this.sessionAvailability(value.startTime, value.endTime);
     return value;
   }
 
@@ -48,6 +58,18 @@ export class SessionsCreatePipe implements PipeTransform<CreateSessionDto, Promi
     });
     if (!patient) {
       throw new BadRequestException('Patient not found');
+    }
+  }
+
+  private async sessionAvailability(startTime: Date, endTime: Date) {
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+    });
+    if (sessions.length > 0) {
+      throw new BadRequestException('Session not available');
     }
   }
 }
