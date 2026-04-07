@@ -33,6 +33,11 @@ export const refreshAccessToken = async () => {
   } catch (error) {
     console.error("Error refreshing token:", error);
   }   
+};
+
+export const permissionRole = (role: string) => {
+  const { user } = useAuth();
+  return user?.role === role;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
