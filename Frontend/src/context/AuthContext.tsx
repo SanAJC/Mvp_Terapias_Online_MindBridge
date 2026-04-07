@@ -3,6 +3,8 @@ import { User } from "../types/index";
 
 interface AuthContextType {
   user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   login: (user: User) => void;
   logout: () => void;
   setAccessToken: (token: string | null) => void;
@@ -50,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, setAccessToken }}>
+    <AuthContext.Provider value={{ user, login, logout, setAccessToken, accessToken,refreshToken }}>
       {children}
     </AuthContext.Provider>
   );
