@@ -27,10 +27,10 @@ export class AuthService {
     }
 
 
-    async register( data : RegisterDto): Promise<{ accessToken: string; refreshToken: string }> {
+    async register( data : RegisterDto) {
         const handlePassword = await this.hashPassword(data.password)
         const user = await this.prisma.user.create({
-            data : { email: data.email, password: handlePassword }
+            data : { email: data.email, password: handlePassword, username: data.username }
         });
 
         const accessToken = await this.jwtService.generateAccessToken(
@@ -40,7 +40,7 @@ export class AuthService {
         const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
           user.id,
         );
-        return { accessToken, refreshToken };
+        return { user, accessToken, refreshToken };
     }
 
     async login(data : LoginDto): Promise<{ accessToken: string; refreshToken: string; data_user: {} }> {
@@ -48,7 +48,7 @@ export class AuthService {
         if (!user || !(await bcrypt.compare(data.password, user.password))) {
           throw new UnauthorizedException('Invalid credentials');
         }
-        const data_user = { email : user.email, rol : user.role, is_activate: user.isActive}
+        const data_user = { id: user.id, username: user.email, email: user.email, role: user.role, isActive: user.isActive}
         const accessToken = await this.jwtService.generateAccessToken(
           user.id,
           user.role,

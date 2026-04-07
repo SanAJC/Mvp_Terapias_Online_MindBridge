@@ -5,6 +5,8 @@ import { User, Mail, Lock, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import authBg from "@/assets/auth-bg.jpg";
 import LegalModal from "@/components/shared/LegalModal";
+import { useAuthApi } from "@/connections/api/Auth";
+import { toast } from "sonner";
 
 const Register = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -13,6 +15,21 @@ const Register = () => {
   const [legalModal, setLegalModal] = useState<"privacy" | "terms" | "hipaa" | null>(null);
 
   const allAccepted = acceptedTerms && acceptedPrivacy && acceptedHipaa;
+  const { handleRegister, loading, error } = useAuthApi();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error("Las contraseñas no coinciden");
+      return;
+    }
+    handleRegister(username, email, password);
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -52,12 +69,19 @@ const Register = () => {
             Completa tus datos para comenzar tu experiencia personalizada en MindBridge.
           </p>
 
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Nombre completo</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type="text" placeholder="Ej. Juan Pérez" className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" />
+                <input 
+                  type="text" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)}
+                  required 
+                  placeholder="Ej. Juan Pérez" 
+                  className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" 
+                />
               </div>
             </div>
 
@@ -65,7 +89,14 @@ const Register = () => {
               <label className="text-sm font-medium text-foreground mb-1.5 block">Correo electrónico</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type="email" placeholder="nombre@ejemplo.com" className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" />
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
+                  required 
+                  placeholder="nombre@ejemplo.com" 
+                  className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" 
+                />
               </div>
             </div>
 
@@ -74,14 +105,28 @@ const Register = () => {
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Contraseña</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input type="password" placeholder="••••••••" className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" />
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)}
+                    required 
+                    placeholder="••••••••" 
+                    className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" 
+                  />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Confirmar</label>
                 <div className="relative">
                   <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input type="password" placeholder="••••••••" className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" />
+                  <input 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required 
+                    placeholder="••••••••" 
+                    className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow" 
+                  />
                 </div>
               </div>
             </div>
@@ -126,9 +171,11 @@ const Register = () => {
               disabled={!allAccepted}
               className="w-full py-3 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Registrarse
+              {loading ? "Registrando..." : "Registrarse"}
             </button>
           </form>
+
+          {error && toast.error(error)}
 
           <p className="text-sm text-muted-foreground mt-6 text-center">
             ¿Ya tienes cuenta? <Link to="/login" className="font-semibold text-foreground hover:underline">Inicia sesión</Link>

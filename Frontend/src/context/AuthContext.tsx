@@ -5,7 +5,7 @@ interface AuthContextType {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
-  login: (user: User) => void;
+  login: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
   setAccessToken: (token: string | null) => void;
 }
@@ -15,36 +15,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
     const savedUser = sessionStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (!savedUser || savedUser === "undefined") return null;
+    try {
+      return JSON.parse(savedUser);
+    } catch {
+      return null;
+    }
   });
 
   const [accessToken, setAccessTokenState] = useState<string | null>(() => {
     const savedToken = sessionStorage.getItem("accessToken");
-    return savedToken ? savedToken : null;
+    return savedToken || null;
   });
 
   const [refreshToken, setRefreshToken] = useState<string | null>(() => {
     const savedRefreshToken = sessionStorage.getItem("refreshToken");
-    return savedRefreshToken ? savedRefreshToken : null;
+    return savedRefreshToken || null;
   });
 
-  const login = (user: User) => {
-    setUser(user);
-    sessionStorage.setItem("user", JSON.stringify(user));
+  const login = (data_user:User,accessToken:string,refreshToken:string)=>{
+    setUser(data_user);
     setAccessTokenState(accessToken);
-    sessionStorage.setItem("accessToken", accessToken || "");
     setRefreshToken(refreshToken);
-    sessionStorage.setItem("refreshToken", refreshToken || "");
-  };
 
-  const logout = () => {
+    sessionStorage.setItem('user', JSON.stringify(data_user));
+    sessionStorage.setItem('accessToken', accessToken);
+    sessionStorage.setItem('refreshToken', refreshToken);
+  }
+
+  const logout =()=>{
     setUser(null);
-    sessionStorage.removeItem("user");
     setAccessTokenState(null);
-    sessionStorage.removeItem("accessToken");
     setRefreshToken(null);
-    sessionStorage.removeItem("refreshToken");
-  };
+
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+  }
 
   const setAccessToken = (token: string | null) => {
     setAccessTokenState(token);
@@ -52,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, setAccessToken, accessToken,refreshToken }}>
+    <AuthContext.Provider value={{ user,accessToken,refreshToken, login, logout, setAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

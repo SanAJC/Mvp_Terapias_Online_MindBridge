@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Logo } from "@/components/shared/Logo";
 import { LayoutDashboard, Calendar, Users, BarChart3, HelpCircle, LogOut, Stethoscope } from "lucide-react";
 import type { UserRole } from "@/types";
-
+import { useAuthApi } from "@/connections/api/Auth";
 interface SidebarProps {
   role: UserRole;
 }
@@ -29,6 +29,7 @@ const navItems: Record<UserRole, { label: string; path: string; icon: React.Reac
 export const Sidebar = ({ role }: SidebarProps) => {
   const location = useLocation();
   const items = navItems[role];
+  const { handleLogout } = useAuthApi();
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[200px] bg-card border-r border-border flex flex-col z-30">
@@ -65,7 +66,7 @@ export const Sidebar = ({ role }: SidebarProps) => {
           <HelpCircle size={20} />
           Centro de Ayuda
         </button>
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary/60 w-full transition-colors">
+        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary/60 w-full transition-colors" onClick={handleLogout}>
           <LogOut size={20} />
           Cerrar Sesión
         </button>

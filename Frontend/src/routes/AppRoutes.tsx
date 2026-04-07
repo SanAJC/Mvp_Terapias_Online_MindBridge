@@ -31,7 +31,7 @@ export const AppRoutes = () => {
 
             {/* Therapist */}
             <Route path="/terapeuta" element={
-                permissionRole("therapist") ? (
+                permissionRole("THERAPIST") ? (
                 <ProtectedRoute>
                     <TherapistDashboard />
                 </ProtectedRoute>
@@ -40,7 +40,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/terapeuta/sesiones" element={
-                permissionRole("therapist") ? (
+                permissionRole("THERAPIST") ? (
                 <ProtectedRoute>
                     <TherapistSessions />
                 </ProtectedRoute>
@@ -49,7 +49,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/terapeuta/pacientes" element={
-                permissionRole("therapist") ? (
+                permissionRole("THERAPIST") ? (
                 <ProtectedRoute>
                     <TherapistPatients />
                 </ProtectedRoute>
@@ -60,7 +60,7 @@ export const AppRoutes = () => {
 
             {/* Coordinator */}
             <Route path="/coordinador" element={
-                permissionRole("coordinator") ? (
+                permissionRole("COORDINATOR") ? (
                 <ProtectedRoute>
                     <CoordinatorDashboard />
                 </ProtectedRoute>
@@ -69,7 +69,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/coordinador/sesiones" element={
-                permissionRole("coordinator") ? (
+                permissionRole("COORDINATOR") ? (
                 <ProtectedRoute>
                     <CoordinatorSessions />
                 </ProtectedRoute>
@@ -78,7 +78,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/coordinador/directorio" element={
-                permissionRole("coordinator") ? (
+                permissionRole("COORDINATOR") ? (
                 <ProtectedRoute>
                     <CoordinatorUsers />
                 </ProtectedRoute>
@@ -87,7 +87,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/coordinador/analisis" element={
-                permissionRole("coordinator") ? (
+                permissionRole("COORDINATOR") ? (
                 <ProtectedRoute>
                     <CoordinatorReports />
                 </ProtectedRoute>
@@ -98,7 +98,7 @@ export const AppRoutes = () => {
 
             {/* Patient */}
             <Route path="/paciente" element={
-                permissionRole("patient") ? (
+                permissionRole("PATIENT") ? (
                 <ProtectedRoute>
                     <PatientDashboard />
                 </ProtectedRoute>
@@ -107,7 +107,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/paciente/sesiones" element={
-                permissionRole("patient") ? (
+                permissionRole("PATIENT") ? (
                 <ProtectedRoute>
                     <PatientSessions />
                 </ProtectedRoute>
@@ -116,7 +116,7 @@ export const AppRoutes = () => {
                 )
             } />
             <Route path="/paciente/terapeutas" element={
-                permissionRole("patient") ? (
+                permissionRole("PATIENT") ? (
                 <ProtectedRoute>
                     <PatientTherapists />
                 </ProtectedRoute>

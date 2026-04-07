@@ -4,9 +4,18 @@ import { Logo } from "@/components/shared/Logo";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import authBg from "@/assets/auth-bg.jpg";
+import { useAuthApi } from "@/connections/api/Auth";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const { handleLogin } = useAuthApi();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleLogin(email, password);
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -46,7 +55,7 @@ const Login = () => {
             Por favor, ingrese sus credenciales para acceder a su espacio de trabajo.
           </p>
 
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Correo electrónico</label>
               <div className="relative">
@@ -54,6 +63,9 @@ const Login = () => {
                 <input
                   type="email"
                   placeholder="nombre@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow"
                 />
               </div>
@@ -69,6 +81,9 @@ const Login = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                   className="w-full pl-10 pr-12 py-3 bg-secondary/50 border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 transition-shadow"
                 />
                 <button
@@ -86,12 +101,12 @@ const Login = () => {
               Recordar este dispositivo
             </label>
 
-            <Link
-              to="/terapeuta"
+            <div
+              onClick={handleSubmit}
               className="w-full py-3 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               Acceder al Panel <ArrowRight size={16} />
-            </Link>
+            </div>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
