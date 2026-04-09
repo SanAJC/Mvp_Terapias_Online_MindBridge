@@ -85,7 +85,7 @@ const TherapistSessions = () => {
 
   return (
     <DashboardLayout
-      role="therapist"
+      role="THERAPIST"
       userName="Dr. Alejandro M."
       userRole="Terapeuta Senior"
     >

@@ -6,7 +6,7 @@ import { BarChart3, Download, Search, History, Users, Shield, SlidersHorizontal,
 const CoordinatorReports = () => {
   return (
     <DashboardLayout
-      role="coordinator"
+      role="COORDINATOR"
       userName="Dr. Julián Rivas"
       userRole="Coordinador de Terapia"
     >

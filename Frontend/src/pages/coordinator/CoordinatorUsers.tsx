@@ -9,19 +9,21 @@ import { directoryUsers as initialUsers } from "@/data/mockData";
 import { UserPlus, Search, SlidersHorizontal, Users, FileText, AlertTriangle, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { User } from "@/types";
+import type { User } from "@/types/index";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { useUsersApi } from "@/connections/api/users";
 
 const roleBadge: Record<string, string> = {
-  therapist: "bg-accent/12 text-accent",
-  patient: "bg-status-scheduled/12 text-status-scheduled",
-  coordinator: "bg-muted text-muted-foreground",
+  THERAPIST: "bg-[#59E5CA] text-accent",
+  PATIENT: "bg-[#79ADE1] text-white",
+  COORDINATOR: "bg-muted text-muted-foreground",
 };
 
 const roleLabel: Record<string, string> = {
-  therapist: "Terapeuta",
-  patient: "Paciente",
-  coordinator: "Admin",
+  THERAPIST: "Terapeuta",
+  PATIENT: "Paciente",
+  COORDINATOR: "Coordinador",
 };
 
 const CoordinatorUsers = () => {
@@ -36,27 +38,34 @@ const CoordinatorUsers = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { getUsers } = useUsersApi();
+
+  // Fetch users on component mount
+  useEffect(() => {
+    getUsers().then((users) => {
+      setUsers(users);
+    });
+  }, []);
+
   const filtered = users.filter((u) => {
     if (roleFilter !== "all" && u.role !== roleFilter) return false;
-    if (statusFilter !== "all" && u.status !== statusFilter) return false;
+    if (statusFilter !== "all" && u.isActive !== (statusFilter === "active")) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+      return u.username?.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     }
     return true;
   });
 
-  const handleSave = (user: User) => {
-    setUsers((prev) => {
-      const exists = prev.find((u) => u.id === user.id);
-      if (exists) {
-        toast.success("Usuario actualizado");
-        return prev.map((u) => (u.id === user.id ? user : u));
-      }
-      toast.success("Usuario creado");
-      return [...prev, user];
-    });
-    setEditingUser(null);
+  const handleUserUpdated = async () => {
+    // Refrescar la lista de usuarios desde la API
+    try {
+      const updatedUsers = await getUsers();
+      setUsers(updatedUsers);
+    } catch (error) {
+      console.error("Error al refrescar usuarios:", error);
+      toast.error("Error al actualizar la lista de usuarios");
+    }
   };
 
   const handleDelete = () => {
@@ -83,19 +92,19 @@ const CoordinatorUsers = () => {
     setDeleteOpen(true);
   };
 
-  const activeCount = users.filter((u) => u.role === "therapist" && u.status === "active").length + users.filter((u) => u.role === "coordinator" && u.status === "active").length;
-  const patientCount = users.filter((u) => u.role === "patient").length;
-  const pendingCount = users.filter((u) => u.status === "suspended").length;
+  const activeCount = users.filter((u) => u.role === "THERAPIST" && u.isActive === true).length + users.filter((u) => u.role === "COORDINATOR" && u.isActive === true).length;
+  const patientCount = users.filter((u) => u.role === "PATIENT").length;
+  const pendingCount = users.filter((u) => u.isActive === false).length;
 
   const tabOptions = [
     { label: "Todos los usuarios", value: "all" },
-    { label: "Terapeutas", value: "therapist" },
-    { label: "Pacientes", value: "patient" },
+    { label: "Terapeutas", value: "THERAPIST" },
+    { label: "Pacientes", value: "PATIENT" },
   ];
 
   return (
     <DashboardLayout
-      role="coordinator"
+      role="COORDINATOR"
       userName="Sarah Jenkins"
       userRole="Coordinadora"
     >
@@ -152,13 +161,9 @@ const CoordinatorUsers = () => {
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
                 <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="suspended">Suspendidos</SelectItem>
                 <SelectItem value="inactive">Inactivos</SelectItem>
               </SelectContent>
             </Select>
-            <button className="w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-secondary transition-colors">
-              <SlidersHorizontal size={16} className="text-muted-foreground" />
-            </button>
           </motion.div>
 
           {/* Table */}
@@ -172,7 +177,7 @@ const CoordinatorUsers = () => {
             </div>
 
             {filtered.map((user) => {
-              const initials = user.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+              const initials = user.username?.split(" ").map(n => n[0]).join("").slice(0, 2) || "";
               return (
                 <div key={user.id} className="grid grid-cols-12 gap-4 px-6 py-4 border-t border-border items-center hover:bg-secondary/30 transition-colors">
                   <div className="col-span-4 flex items-center gap-3">
@@ -180,7 +185,7 @@ const CoordinatorUsers = () => {
                       <AvatarFallback className="bg-muted text-muted-foreground text-sm font-medium">{initials}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold text-sm text-foreground">{user.name}</p>
+                      <p className="font-semibold text-sm text-foreground">{user.username}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
@@ -188,12 +193,12 @@ const CoordinatorUsers = () => {
                     <span className={`status-badge text-xs ${roleBadge[user.role]}`}>{roleLabel[user.role]}</span>
                   </div>
                   <div className="col-span-3 text-sm text-muted-foreground">
-                    {user.role === "therapist" ? "12 Pacientes" : user.role === "patient" ? "Dr. Aris Thorne" : "—"}
+                    {user.role === "THERAPIST" ? "12 Pacientes" : user.role === "PATIENT" ? "Dr. Aris Thorne" : "—"}
                   </div>
                   <div className="col-span-2">
-                    <span className={`flex items-center gap-1.5 text-xs font-medium ${user.status === "active" ? "text-status-active" : "text-status-pending"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-status-active" : "bg-status-pending"}`} />
-                      {user.status === "active" ? "Activo" : "Suspendido"}
+                    <span className={`flex items-center gap-1.5 text-xs font-medium ${user.isActive ? "text-status-active" : "text-status-pending"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${user.isActive ? "bg-status-active" : "bg-status-pending"}`} />
+                      {user.isActive ? "Activo" : "Suspendido"}
                     </span>
                   </div>
                   <div className="col-span-1">
@@ -248,13 +253,14 @@ const CoordinatorUsers = () => {
         </motion.div>
       </PageTransition>
 
-      <UserFormModal open={formOpen} onOpenChange={setFormOpen} user={editingUser} onSave={handleSave} />
+      <UserFormModal open={formOpen} onOpenChange={setFormOpen} user={editingUser} onUserUpdated={handleUserUpdated} />
       <DeleteConfirmModal
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Eliminar usuario"
         description="¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer."
         onConfirm={handleDelete}
+        userId={deletingId || ""}
       />
     </DashboardLayout>
   );

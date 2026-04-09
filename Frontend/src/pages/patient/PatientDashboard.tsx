@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 const PatientDashboard = () => {
   return (
     <DashboardLayout
-      role="patient"
+      role="PATIENT"
       userName="Sofía Martínez"
       userRole="Plan Premium"
     >

@@ -1,4 +1,4 @@
-export type UserRole = "coordinator" | "therapist" | "patient";
+export type UserRole = "COORDINATOR" | "THERAPIST" | "PATIENT";
 
 export interface User {
   id: string;

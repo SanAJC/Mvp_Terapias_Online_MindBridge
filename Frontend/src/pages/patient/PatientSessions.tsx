@@ -15,7 +15,7 @@ const PatientSessions = () => {
 
   return (
     <DashboardLayout
-      role="patient"
+      role="PATIENT"
       userName="Sofía Martínez"
       userRole="Plan Premium"
     >

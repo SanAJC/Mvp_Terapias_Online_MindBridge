@@ -54,7 +54,7 @@ const TherapistPatients = () => {
 
   return (
     <DashboardLayout
-      role="therapist"
+      role="THERAPIST"
       userName={THERAPIST_NAME}
       userRole="Psicólogo Clínico"
     >

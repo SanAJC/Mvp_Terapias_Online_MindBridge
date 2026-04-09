@@ -6,25 +6,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import type { User, UserRole } from "@/types";
 import { UserPlus, Pencil } from "lucide-react";
+import { useUsersApi } from "@/connections/api/users";
+import { toast } from "sonner";
 
 interface UserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: User | null;
-  onSave: (user: User) => void;
+  onUserUpdated: () => void; // Para refrescar la lista después de crear/actualizar
 }
 
 const emptyForm = {
-  name: "",
+  username: "",
   email: "",
   password: "",
-  role: "patient" as UserRole,
-  status: "active" as "active" | "suspended" | "inactive",
+  role: "PATIENT" as UserRole,
+  isActive: true as boolean,
 };
 
-export const UserFormModal = ({ open, onOpenChange, user, onSave }: UserFormModalProps) => {
+export const UserFormModal = ({ open, onOpenChange, user, onUserUpdated }: UserFormModalProps) => {
   const isEdit = !!user;
   const [form, setForm] = useState(emptyForm);
+  const [isLoading, setIsLoading] = useState(false);
+  const { postUser, updateUser } = useUsersApi();
 
   useEffect(() => {
     if (user) {
@@ -35,15 +39,34 @@ export const UserFormModal = ({ open, onOpenChange, user, onSave }: UserFormModa
     }
   }, [user, open]);
 
-  const handleSave = () => {
-    onSave({
-      id: user?.id || crypto.randomUUID(),
-      name: form.name,
-      email: form.email,
-      role: form.role,
-      status: form.status,
-    });
-    onOpenChange(false);
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      const userData = {
+        id: user?.id || crypto.randomUUID(),
+        username: form.username,
+        email: form.email,
+        password: form.password || (user?.password || ""),
+        role: form.role,
+        isActive: form.isActive,
+      };
+
+      if (isEdit && user?.id) {
+        await updateUser(user.id, userData);
+        toast.success("Usuario actualizado correctamente");
+      } else {
+        await postUser(userData);
+        toast.success("Usuario creado correctamente");
+      }
+
+      onUserUpdated(); // Refrescar la lista
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error al guardar usuario:", error);
+      toast.error(isEdit ? "Error al actualizar usuario" : "Error al crear usuario");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,7 +85,7 @@ export const UserFormModal = ({ open, onOpenChange, user, onSave }: UserFormModa
         <div className="grid gap-4 py-2">
           <div className="space-y-1.5">
             <Label htmlFor="userName">Nombre completo</Label>
-            <Input id="userName" placeholder="Nombre y apellido" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input id="userName" placeholder="Nombre y apellido" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           </div>
 
           <div className="space-y-1.5">
@@ -81,19 +104,18 @@ export const UserFormModal = ({ open, onOpenChange, user, onSave }: UserFormModa
               <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as UserRole })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="therapist">Terapeuta</SelectItem>
-                  <SelectItem value="patient">Paciente</SelectItem>
-                  <SelectItem value="coordinator">Coordinador</SelectItem>
+                  <SelectItem value="THERAPIST">Terapeuta</SelectItem>
+                  <SelectItem value="PATIENT">Paciente</SelectItem>
+                  <SelectItem value="COORDINATOR">Coordinador</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Estado</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "active" | "suspended" | "inactive" })}>
+              <Select value={form.isActive ? "active" : "inactive"} onValueChange={(v) => setForm({ ...form, isActive: v === "active" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Activo</SelectItem>
-                  <SelectItem value="suspended">Suspendido</SelectItem>
                   <SelectItem value="inactive">Inactivo</SelectItem>
                 </SelectContent>
               </Select>
@@ -103,8 +125,8 @@ export const UserFormModal = ({ open, onOpenChange, user, onSave }: UserFormModa
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!form.name || !form.email || (!isEdit && form.password.length < 6)}>
-            {isEdit ? "Guardar cambios" : "Crear usuario"}
+          <Button onClick={handleSave} disabled={!form.username || !form.email || (!isEdit && form.password.length < 6) || isLoading}>
+            {isLoading ? (isEdit ? "Actualizando..." : "Creando...") : (isEdit ? "Guardar cambios" : "Crear usuario")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -88,7 +88,7 @@ const CoordinatorSessions = () => {
 
   return (
     <DashboardLayout
-      role="coordinator"
+      role="COORDINATOR"
       userName="Dr. Julián Rivas"
       userRole="Coordinador de Terapia"
     >

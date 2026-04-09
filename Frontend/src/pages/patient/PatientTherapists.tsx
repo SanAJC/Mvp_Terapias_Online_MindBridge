@@ -8,7 +8,7 @@ import { assignedTherapists, exploreTherapists } from "@/data/patientMockData";
 const PatientTherapists = () => {
   return (
     <DashboardLayout
-      role="patient"
+      role="PATIENT"
       userName="Sofía Martínez"
       userRole="Plan Premium"
     >

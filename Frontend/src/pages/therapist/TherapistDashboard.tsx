@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 const TherapistDashboard = () => {
   return (
     <DashboardLayout
-      role="therapist"
+      role="THERAPIST"
       userName="Dr. Alejandro M."
       userRole="Terapeuta Senior"
     >

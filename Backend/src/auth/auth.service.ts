@@ -7,6 +7,7 @@ import * as jwt from 'jsonwebtoken';
 import { RefreshTokenDto } from './dto/refresh-token';
 import { LogoutDto } from './dto/logout';
 import { JwtService } from './utils/jwt_generated';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -40,6 +41,13 @@ export class AuthService {
         const refreshToken = await this.jwtService.generateAndStoreRefreshToken(
           user.id,
         );
+        if (user.role === Role.PATIENT) {
+          await this.prisma.patientProfile.create({
+            data: {
+              userId: user.id,
+            },
+          });
+        }
         return { user, accessToken, refreshToken };
     }
 
@@ -48,7 +56,7 @@ export class AuthService {
         if (!user || !(await bcrypt.compare(data.password, user.password))) {
           throw new UnauthorizedException('Invalid credentials');
         }
-        const data_user = { id: user.id, username: user.email, email: user.email, role: user.role, isActive: user.isActive}
+        const data_user = { id: user.id, username: user.username, email: user.email, role: user.role, isActive: user.isActive}
         const accessToken = await this.jwtService.generateAccessToken(
           user.id,
           user.role,

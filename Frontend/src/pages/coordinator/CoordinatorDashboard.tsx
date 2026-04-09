@@ -23,7 +23,7 @@ const activityIcons: Record<string, React.ReactNode> = {
 const CoordinatorDashboard = () => {
   return (
     <DashboardLayout
-      role="coordinator"
+      role="COORDINATOR"
       userName="Elena Vance"
       userRole="Coordinadora"
     >

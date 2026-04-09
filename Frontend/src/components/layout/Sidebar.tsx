@@ -8,18 +8,18 @@ interface SidebarProps {
 }
 
 const navItems: Record<UserRole, { label: string; path: string; icon: React.ReactNode }[]> = {
-  therapist: [
+  THERAPIST: [
     { label: "Resumen", path: "/terapeuta", icon: <LayoutDashboard size={20} /> },
     { label: "Sesiones", path: "/terapeuta/sesiones", icon: <Calendar size={20} /> },
     { label: "Pacientes", path: "/terapeuta/pacientes", icon: <Users size={20} /> },
   ],
-  coordinator: [
+  COORDINATOR: [
     { label: "Resumen", path: "/coordinador", icon: <LayoutDashboard size={20} /> },
     { label: "Sesiones", path: "/coordinador/sesiones", icon: <Calendar size={20} /> },
     { label: "Directorio", path: "/coordinador/directorio", icon: <Users size={20} /> },
     { label: "Análisis", path: "/coordinador/analisis", icon: <BarChart3 size={20} /> },
   ],
-  patient: [
+  PATIENT: [
     { label: "Resumen", path: "/paciente", icon: <LayoutDashboard size={20} /> },
     { label: "Sesiones", path: "/paciente/sesiones", icon: <Calendar size={20} /> },
     { label: "Terapeutas", path: "/paciente/terapeutas", icon: <Stethoscope size={20} /> },
@@ -40,7 +40,7 @@ export const Sidebar = ({ role }: SidebarProps) => {
       <nav className="flex-1 px-3 space-y-1">
         {items.map((item) => {
           const isActive =
-            item.path === `/${role === "therapist" ? "terapeuta" : role === "coordinator" ? "coordinador" : "paciente"}`
+            item.path === `/${role === "THERAPIST" ? "terapeuta" : role === "COORDINATOR" ? "coordinador" : "paciente"}`
               ? location.pathname === item.path
               : location.pathname.startsWith(item.path);
 

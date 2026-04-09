@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle } from "lucide-react";
+import { useUsersApi } from "@/connections/api/users";
 
 interface DeleteConfirmModalProps {
   open: boolean;
@@ -16,9 +17,16 @@ interface DeleteConfirmModalProps {
   title: string;
   description: string;
   onConfirm: () => void;
+  userId: string;
 }
 
-export const DeleteConfirmModal = ({ open, onOpenChange, title, description, onConfirm }: DeleteConfirmModalProps) => {
+export const DeleteConfirmModal = ({ open, onOpenChange, title, description, onConfirm, userId }: DeleteConfirmModalProps) => {
+  const { deleteUser } = useUsersApi();
+  
+  const handleDelete = (id: string) => {
+    deleteUser(id);
+    onConfirm();
+  };
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -33,7 +41,7 @@ export const DeleteConfirmModal = ({ open, onOpenChange, title, description, onC
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogAction onClick={() => handleDelete('')} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
             Eliminar
           </AlertDialogAction>
         </AlertDialogFooter>
