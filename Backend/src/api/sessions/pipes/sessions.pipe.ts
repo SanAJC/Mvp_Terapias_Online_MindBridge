@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateSessionDto } from '../dto/create-session.dto';
 import { UpdateSessionDto } from '../dto/update-session.dto';
+import { SessionStatus } from '@prisma/client';
 
 function assertStartTimeNotPastDay(startTime: Date) {
   const start = new Date(startTime);
@@ -58,15 +59,19 @@ export class SessionsCreatePipe implements PipeTransform<CreateSessionDto, Promi
     value.therapistId = therapistProfile.id;
     value.patientId = patientProfile.id;
     
-    await this.sessionAvailability(value.startTime, value.endTime);
+    await this.sessionAvailability(value.startTime, value.endTime, value.status, value.patientId, value.therapistId);
     return value;
   }
 
-  private async sessionAvailability(startTime: Date, endTime: Date) {
+  // Validamos las sessiones para evitar cruzarlas 
+  private async sessionAvailability(startTime: Date, endTime: Date, status : SessionStatus ,patientId:string,therapistId:string) {
     const sessions = await this.prisma.session.findMany({
       where: {
         startTime: { lt: endTime },
         endTime: { gt: startTime },
+        status : SessionStatus.SCHEDULED,
+        patientId : patientId,
+        therapistId: therapistId
       },
     });
     if (sessions.length > 0) {
