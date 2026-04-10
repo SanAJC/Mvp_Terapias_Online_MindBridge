@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "../types/index";
 
 interface AuthContextType {
@@ -28,38 +28,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return savedToken || null;
   });
 
-  const [refreshToken, setRefreshToken] = useState<string | null>(() => {
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(() => {
     const savedRefreshToken = sessionStorage.getItem("refreshToken");
     return savedRefreshToken || null;
   });
 
-  const login = (data_user:User,accessToken:string,refreshToken:string)=>{
+  // Sincronizar con sessionStorage cuando cambian los tokens
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newAccessToken = sessionStorage.getItem("accessToken");
+      const newRefreshToken = sessionStorage.getItem("refreshToken");
+      
+      if (newAccessToken !== accessToken) {
+        setAccessTokenState(newAccessToken);
+      }
+      if (newRefreshToken !== refreshToken) {
+        setRefreshTokenState(newRefreshToken);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [accessToken, refreshToken]);
+
+  const login = (data_user: User, accessToken: string, refreshToken: string) => {
     setUser(data_user);
     setAccessTokenState(accessToken);
-    setRefreshToken(refreshToken);
+    setRefreshTokenState(refreshToken);
 
-    sessionStorage.setItem('user', JSON.stringify(data_user));
-    sessionStorage.setItem('accessToken', accessToken);
-    sessionStorage.setItem('refreshToken', refreshToken);
-  }
+    sessionStorage.setItem("user", JSON.stringify(data_user));
+    sessionStorage.setItem("accessToken", accessToken);
+    sessionStorage.setItem("refreshToken", refreshToken);
+  };
 
-  const logout =()=>{
+  const logout = () => {
     setUser(null);
     setAccessTokenState(null);
-    setRefreshToken(null);
+    setRefreshTokenState(null);
 
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('refreshToken');
-  }
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("refreshToken");
+  };
 
   const setAccessToken = (token: string | null) => {
     setAccessTokenState(token);
-    sessionStorage.setItem("accessToken", token || "");
+    if (token) {
+      sessionStorage.setItem("accessToken", token);
+    } else {
+      sessionStorage.removeItem("accessToken");
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user,accessToken,refreshToken, login, logout, setAccessToken }}>
+    <AuthContext.Provider
+      value={{ user, accessToken, refreshToken, login, logout, setAccessToken }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -42,8 +42,7 @@ export interface PatientTherapist {
   createdAt: string;
 }
 
-export type SessionStatus = "scheduled" | "completed" | "cancelled" | "pending" | "in-progress";
-export type SessionModality = "presencial" | "telemedicina";
+export type SessionStatus = "SCHEDULED" | "COMPLETED" | "CANCELED" | "ABSENT";
 
 export interface Session {
   id: string;
@@ -51,12 +50,22 @@ export interface Session {
   patientId: string;
   therapist: TherapistProfile;
   patient: PatientProfile;
-  startTime: string;
-  endTime: string;
+  startTime: string; // ISO-8601 desde el backend
+  endTime: string;   // ISO-8601 desde el backend
   meetingLink: string;
   status: SessionStatus;
   notes: ClinicalNote[];
   createdAt: string;
+}
+
+// Tipos auxiliares para el formulario de sesiones
+export interface SessionFormData {
+  therapistId: string;
+  patientId: string;
+  startTime: Date;
+  endTime: Date;
+  meetingLink: string;
+  status: SessionStatus;
 }
 
 export interface ActivityItem {

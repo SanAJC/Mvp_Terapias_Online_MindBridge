@@ -26,10 +26,12 @@ export class CreateSessionDto {
     patientId: string;
 
     @IsNotEmpty()
+    @Type(() => Date)
     @IsDate()
     startTime: Date;
 
     @IsNotEmpty()
+    @Type(() => Date)
     @IsDate()
     endTime: Date;
 
@@ -39,7 +41,6 @@ export class CreateSessionDto {
 
     @IsNotEmpty()
     @IsEnum(SessionStatus)
-    @IsString()
     status: SessionStatus;
 
     @IsOptional()

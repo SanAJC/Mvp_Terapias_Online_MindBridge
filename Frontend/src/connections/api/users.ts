@@ -1,80 +1,30 @@
-import { useAuth } from "@/context/AuthContext";
-import axios from "axios";
+import { axiosInstance } from "@/lib/axiosInstance";
 import type { User } from "@/types/index";
-import { useEffect } from "react";
 
 export const useUsersApi = () => {
-    const { user, accessToken } = useAuth();
-    
-    
     const getUsers = async () => {
-        try {
-            const response = await axios.get("http://localhost:3000/api/users", {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        } catch (err) {
-            console.error("Error al obtener usuarios:", err);
-            throw err;
-        }
+        const response = await axiosInstance.get("/users");
+        return response.data;
     };
 
     const postUser = async (userData: User) => {
-        try {
-            const response = await axios.post("http://localhost:3000/api/users", userData, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        } catch (err) {
-            console.error("Error al crear usuario:", err);
-            throw err;
-        }
+        const response = await axiosInstance.post("/users", userData);
+        return response.data;
     };
 
     const getUserById = async (id: string) => {
-        try {
-            const response = await axios.get(`http://localhost:3000/api/users/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        } catch (err) {
-            console.error("Error al obtener usuario:", err);
-            throw err;
-        }
+        const response = await axiosInstance.get(`/users/${id}`);
+        return response.data;
     };
 
     const updateUser = async (id: string, userData: User) => {
-        try {
-            const response = await axios.patch(`http://localhost:3000/api/users/${id}`, userData, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        } catch (err) {
-            console.error("Error al actualizar usuario:", err);
-            throw err;
-        }
+        const response = await axiosInstance.patch(`/users/${id}`, userData);
+        return response.data;
     };
 
     const deleteUser = async (id: string) => {
-        try {
-            const response = await axios.delete(`http://localhost:3000/api/users/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        } catch (err) {
-            console.error("Error al eliminar usuario:", err);
-            throw err;
-        }
+        const response = await axiosInstance.delete(`/users/${id}`);
+        return response.data;
     };
 
     return {

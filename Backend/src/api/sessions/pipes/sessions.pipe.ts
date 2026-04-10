@@ -37,28 +37,29 @@ export class SessionsCreatePipe implements PipeTransform<CreateSessionDto, Promi
   async transform(value: CreateSessionDto): Promise<CreateSessionDto> {
     assertStartTimeNotPastDay(value.startTime);
     assertEndTimeAfterStartTime(value.startTime, value.endTime);
-    await this.assertTherapist(value.therapistId);
-    await this.assertPatient(value.patientId);
+    
+    // Buscar el profileId del terapeuta basado en userId
+    const therapistProfile = await this.prisma.therapistProfile.findUnique({
+      where: { userId: value.therapistId },
+    });
+    if (!therapistProfile) {
+      throw new BadRequestException('Therapist profile not found');
+    }
+    
+    // Buscar el profileId del paciente basado en userId
+    const patientProfile = await this.prisma.patientProfile.findUnique({
+      where: { userId: value.patientId },
+    });
+    if (!patientProfile) {
+      throw new BadRequestException('Patient profile not found');
+    }
+    
+    // Reemplazar los userId con los profileId
+    value.therapistId = therapistProfile.id;
+    value.patientId = patientProfile.id;
+    
     await this.sessionAvailability(value.startTime, value.endTime);
     return value;
-  }
-
-  private async assertTherapist(id: string) {
-    const therapist = await this.prisma.therapistProfile.findUnique({
-      where: { id },
-    });
-    if (!therapist) {
-      throw new BadRequestException('Therapist not found');
-    }
-  }
-
-  private async assertPatient(id: string) {
-    const patient = await this.prisma.patientProfile.findUnique({
-      where: { id },
-    });
-    if (!patient) {
-      throw new BadRequestException('Patient not found');
-    }
   }
 
   private async sessionAvailability(startTime: Date, endTime: Date) {

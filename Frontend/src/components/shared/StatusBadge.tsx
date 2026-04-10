@@ -1,11 +1,10 @@
 import { SessionStatus } from "@/types";
 
 const statusLabels: Record<SessionStatus, string> = {
-  scheduled: "PROGRAMADA",
-  completed: "COMPLETADA",
-  cancelled: "CANCELADA",
-  pending: "PENDIENTE",
-  "in-progress": "EN CURSO",
+  SCHEDULED: "PROGRAMADA",
+  COMPLETED: "COMPLETADA",
+  CANCELED: "CANCELADA",
+  ABSENT: "AUSENTE",
 };
 
 interface StatusBadgeProps {
@@ -15,11 +14,10 @@ interface StatusBadgeProps {
 
 export const StatusBadge = ({ status, className = "" }: StatusBadgeProps) => {
   const statusClass = {
-    scheduled: "status-scheduled",
-    completed: "status-completed",
-    cancelled: "status-cancelled",
-    pending: "status-pending",
-    "in-progress": "status-active",
+    SCHEDULED: "status-scheduled",
+    COMPLETED: "status-completed",
+    CANCELED: "status-cancelled",
+    ABSENT: "status-pending",
   }[status];
 
   return (

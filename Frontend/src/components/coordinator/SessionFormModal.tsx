@@ -4,46 +4,110 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { Session, SessionStatus, SessionModality } from "@/types";
-import { CalendarPlus, Pencil } from "lucide-react";
+import { useUsersApi } from "@/connections/api/users";
+import { getTranslatedErrorMessage } from "@/lib/errorHandler";
+import type { Session, SessionStatus, SessionFormData, User } from "@/types";
+import { CalendarPlus, Pencil, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface SessionFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session?: Session | null;
-  onSave: (session: Session) => void;
+  onSave: (formData: SessionFormData) => void;
 }
 
-const emptySession: Omit<Session, "id"> = {
-  patientName: "",
-  therapistName: "",
-  status: "scheduled",
-  modality: "presencial",
-  date: "",
-  startTime: "",
-  endTime: "",
-  therapyType: "",
+const emptyForm: SessionFormData = {
+  therapistId: "",
+  patientId: "",
+  startTime: new Date(),
+  endTime: new Date(),
+  meetingLink: "",
+  status: "SCHEDULED",
 };
 
 export const SessionFormModal = ({ open, onOpenChange, session, onSave }: SessionFormModalProps) => {
   const isEdit = !!session;
-  const [form, setForm] = useState<Omit<Session, "id">>(emptySession);
+  const { getUsers } = useUsersApi();
+  
+  const [form, setForm] = useState<SessionFormData>(emptyForm);
+  const [therapists, setTherapists] = useState<User[]>([]);
+  const [patients, setPatients] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // Cargar usuarios al abrir el modal
+  useEffect(() => {
+    if (open) {
+      loadUsers();
+    }
+  }, [open]);
+
+  // Cargar datos de la sesión si estamos editando
   useEffect(() => {
     if (session) {
-      const { id, ...rest } = session;
-      setForm(rest);
+      setForm({
+        therapistId: session.therapist?.userId || session.therapistId,
+        patientId: session.patient?.userId || session.patientId,
+        startTime: new Date(session.startTime),
+        endTime: new Date(session.endTime),
+        meetingLink: session.meetingLink || "",
+        status: session.status,
+      });
     } else {
-      setForm(emptySession);
+      setForm(emptyForm);
     }
   }, [session, open]);
 
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const users = await getUsers();
+      setTherapists(users.filter((u: User) => u.role === "THERAPIST"));
+      setPatients(users.filter((u: User) => u.role === "PATIENT"));
+    } catch (error) {
+      toast.error(getTranslatedErrorMessage(error, "Error al cargar usuarios"));
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   const handleSave = () => {
-    onSave({
-      id: session?.id || crypto.randomUUID(),
-      ...form,
-    });
-    onOpenChange(false);
+    // Validaciones
+    if (!form.therapistId || !form.patientId) {
+      toast.error("Debes seleccionar un terapeuta y un paciente");
+      return;
+    }
+    if (!form.startTime || !form.endTime) {
+      toast.error("Debes especificar fecha y hora de inicio y fin");
+      return;
+    }
+    if (!form.meetingLink || form.meetingLink.trim() === "") {
+      toast.error("Debes proporcionar un enlace de reunión");
+      return;
+    }
+
+    // Validar que la fecha de fin sea posterior a la de inicio
+    if (form.endTime <= form.startTime) {
+      toast.error("La hora de fin debe ser posterior a la hora de inicio");
+      return;
+    }
+
+    onSave(form);
+  };
+
+  // Helper para convertir Date a datetime-local input format
+  const toDateTimeLocal = (date: Date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const offset = d.getTimezoneOffset();
+    const localDate = new Date(d.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  // Helper para convertir datetime-local a Date
+  const fromDateTimeLocal = (dateTimeLocal: string) => {
+    if (!dateTimeLocal) return new Date();
+    return new Date(dateTimeLocal);
   };
 
   return (
@@ -59,67 +123,96 @@ export const SessionFormModal = ({ open, onOpenChange, session, onSave }: Sessio
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="patientName">Paciente</Label>
-              <Input id="patientName" placeholder="Nombre del paciente" value={form.patientName} onChange={(e) => setForm({ ...form, patientName: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="therapistName">Terapeuta</Label>
-              <Input id="therapistName" placeholder="Nombre del terapeuta" value={form.therapistName || ""} onChange={(e) => setForm({ ...form, therapistName: e.target.value })} />
-            </div>
+        {loadingUsers ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
+        ) : (
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="therapistId">Terapeuta</Label>
+                <Select value={form.therapistId} onValueChange={(v) => setForm({ ...form, therapistId: v })}>
+                  <SelectTrigger id="therapistId">
+                    <SelectValue placeholder="Seleccionar terapeuta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {therapists.map((therapist) => (
+                      <SelectItem key={therapist.id} value={therapist.id}>
+                        {therapist.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="patientId">Paciente</Label>
+                <Select value={form.patientId} onValueChange={(v) => setForm({ ...form, patientId: v })}>
+                  <SelectTrigger id="patientId">
+                    <SelectValue placeholder="Seleccionar paciente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map((patient) => (
+                      <SelectItem key={patient.id} value={patient.id}>
+                        {patient.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="date">Fecha</Label>
-              <Input id="date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="startTime">Fecha y hora de inicio</Label>
+                <Input
+                  id="startTime"
+                  type="datetime-local"
+                  value={toDateTimeLocal(form.startTime)}
+                  onChange={(e) => setForm({ ...form, startTime: fromDateTimeLocal(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="endTime">Fecha y hora de fin</Label>
+                <Input
+                  id="endTime"
+                  type="datetime-local"
+                  value={toDateTimeLocal(form.endTime)}
+                  onChange={(e) => setForm({ ...form, endTime: fromDateTimeLocal(e.target.value) })}
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="startTime">Inicio</Label>
-              <Input id="startTime" type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="endTime">Fin</Label>
-              <Input id="endTime" type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Modalidad</Label>
-              <Select value={form.modality} onValueChange={(v) => setForm({ ...form, modality: v as SessionModality })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="presencial">Presencial</SelectItem>
-                  <SelectItem value="telemedicina">Telemedicina</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="meetingLink">Enlace de reunión</Label>
+              <Input
+                id="meetingLink"
+                placeholder="https://meet.google.com/..."
+                value={form.meetingLink}
+                onChange={(e) => setForm({ ...form, meetingLink: e.target.value })}
+              />
             </div>
+
             <div className="space-y-1.5">
-              <Label>Estado</Label>
+              <Label htmlFor="status">Estado</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as SessionStatus })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">Programada</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="cancelled">Cancelada</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="SCHEDULED">Programada</SelectItem>
+                  <SelectItem value="COMPLETED">Completada</SelectItem>
+                  <SelectItem value="CANCELED">Cancelada</SelectItem>
+                  <SelectItem value="ABSENT">Ausente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="therapyType">Tipo de terapia (opcional)</Label>
-            <Input id="therapyType" placeholder="Ej: TCC, Psicoanálisis..." value={form.therapyType || ""} onChange={(e) => setForm({ ...form, therapyType: e.target.value })} />
-          </div>
-        </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!form.patientName || !form.date}>
+          <Button onClick={handleSave} disabled={loadingUsers}>
             {isEdit ? "Guardar cambios" : "Crear sesión"}
           </Button>
         </DialogFooter>
