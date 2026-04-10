@@ -10,10 +10,10 @@ export class SessionsService {
 
   createSession(createSessionDto: CreateSessionDto) {
     return this.prisma.session.create({
-      data:{
+      data: {
         therapistId: createSessionDto.therapistId,
         patientId: createSessionDto.patientId,
-        startTime : createSessionDto.startTime,
+        startTime: createSessionDto.startTime,
         endTime: createSessionDto.endTime,
         meetingLink: createSessionDto.meetingLink,
         status: createSessionDto.status,
@@ -26,19 +26,98 @@ export class SessionsService {
               })),
             }
           : undefined,
-      }
+      },
+      include: {
+        patient: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
   getSessions() {
     return this.prisma.session.findMany({
-      orderBy:{ createdAt: 'desc'}
+      include: {
+        patient: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   getSession(id: string) {
     return this.prisma.session.findUnique({
       where: { id },
+      include: {
+        patient: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        notes: true,
+      },
     });
   }
 
@@ -84,7 +163,33 @@ export class SessionsService {
     return this.prisma.session.update({
       where: { id },
       data,
-      include: { notes: true },
+      include: {
+        patient: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        notes: true,
+      },
     });
   }
 

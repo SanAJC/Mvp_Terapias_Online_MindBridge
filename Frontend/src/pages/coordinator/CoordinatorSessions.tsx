@@ -8,6 +8,7 @@ import { SessionFormModal } from "@/components/coordinator/SessionFormModal";
 import { DeleteConfirmModal } from "@/components/coordinator/DeleteConfirmModal";
 import { useSessionsApi } from "@/connections/api/sessions";
 import { getTranslatedErrorMessage } from "@/lib/errorHandler";
+import { logSessionCreated, logSessionUpdated, logSessionDeleted } from "@/lib/activityLogger";
 import { Filter, TrendingUp, CalendarCheck, Plus, Pencil, Trash2, MoreVertical, Loader2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -74,10 +75,21 @@ const CoordinatorSessions = () => {
       if (editingSession) {
         const updated = await updateSession(editingSession.id, formData);
         setSessions((prev) => prev.map((s) => (s.id === editingSession.id ? updated : s)));
+        
+        // Registrar actividad
+        const patientName = updated.patient?.user?.username || "Paciente";
+        logSessionUpdated(patientName);
+        
         toast.success("Sesión actualizada correctamente");
       } else {
         const created = await createSession(formData);
         setSessions((prev) => [...prev, created]);
+        
+        // Registrar actividad
+        const patientName = created.patient?.user?.username || "Paciente";
+        const therapistName = created.therapist?.user?.username || "Terapeuta";
+        logSessionCreated(patientName, therapistName);
+        
         toast.success("Sesión creada correctamente");
       }
       setEditingSession(null);
@@ -91,8 +103,18 @@ const CoordinatorSessions = () => {
   const handleDelete = async () => {
     if (deletingId) {
       try {
+        // Obtener la sesión antes de eliminarla para el log
+        const sessionToDelete = sessions.find(s => s.id === deletingId);
+        
         await deleteSession(deletingId);
         setSessions((prev) => prev.filter((s) => s.id !== deletingId));
+        
+        // Registrar actividad
+        if (sessionToDelete) {
+          const patientName = sessionToDelete.patient?.user?.username || "Paciente";
+          logSessionDeleted(patientName);
+        }
+        
         toast.success("Sesión eliminada correctamente");
         setDeletingId(null);
         setDeleteOpen(false);
