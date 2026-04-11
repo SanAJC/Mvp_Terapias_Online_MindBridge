@@ -5,8 +5,50 @@ import { Calendar, Video, FileText, Users, Sparkles, MoreVertical, Heart } from 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { sessionHistory } from "@/data/patientMockData";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-
+import { useAuth } from "@/context/AuthContext";
+import { usePatientsApi } from "@/connections/api/patients";
+import { useEffect, useState } from "react";
+import type { User, Session, SessionStatus } from "@/types";
+import { toast } from "sonner";
+import { getTranslatedErrorMessage } from "@/lib/errorHandler";
 const PatientDashboard = () => {
+  const { user } = useAuth();
+  const { getPatientSessions, getPatient } = usePatientsApi();
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const statusMap = {
+    "COMPLETED": "Completado",
+    "CANCELED": "Cancelado",
+    "SCHEDULED": "Programado",
+    "ABSENT": "Ausente"
+  }
+
+  const loadPatientSessions = async () => {
+    try {
+      setLoading(true);
+      const data = await getPatientSessions(user.id);
+      setSessions(data);
+    } catch (error) {
+      toast.error(getTranslatedErrorMessage(error, "Error al cargar las sesiones"));
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadPatientSessions()
+  }, [])
+
+  const fromDateTimeLocal = (dateTimeLocal: string) => {
+    if (!dateTimeLocal) return "";
+    const date = new Date(dateTimeLocal);
+    // Formatea a "DD/MM/YYYY" de forma simple (día, mes, año)
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+  };
   return (
     <DashboardLayout
       role="PATIENT"
@@ -18,7 +60,7 @@ const PatientDashboard = () => {
           {/* Welcome */}
           <motion.div variants={fadeInUp} className="mb-6">
             <h1 className="text-3xl font-bold text-foreground leading-tight">
-              Bienvenida de nuevo, Sofía.
+              Bienvenida de nuevo, {user?.username || "Usuario"}.
             </h1>
             <p className="text-muted-foreground mt-2 max-w-2xl">
               Tu viaje de restauración continúa hoy. Tómate un momento para respirar antes de que comience tu próxima sesión.
@@ -53,7 +95,7 @@ const PatientDashboard = () => {
                       <h3 className="text-xl font-bold text-white">Dra. Eleanor Vance</h3>
                       <div className="flex items-center gap-1.5 mt-1 text-white/70 text-sm">
                         <FileText size={14} />
-                        Terapia Cognitivo-Conductual
+                        Session Terapeutica
                       </div>
                     </div>
                     <div className="text-right">
@@ -105,9 +147,6 @@ const PatientDashboard = () => {
                   <p className="text-sm text-muted-foreground italic leading-relaxed">
                     "Quiero hablar sobre mis patrones de sueño durante esta sesión. Me he sentido más descansada últimamente."
                   </p>
-                  <button className="mt-4 text-xs font-semibold uppercase tracking-wider text-accent hover:underline">
-                    Editar nota →
-                  </button>
                 </motion.div>
 
                 {/* My therapists */}
@@ -149,19 +188,27 @@ const PatientDashboard = () => {
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-semibold text-foreground">Historial de sesiones</h2>
               </div>
-              <div className="space-y-4">
-                {sessionHistory.map((item) => (
+              <div className="space-y-4 overflow-y-auto h-3/4">
+                {sessions.map((item) => {
+                  const statusColorMap: Record<SessionStatus, string> = {
+                    COMPLETED: "hsl(var(--status-completed))",
+                    SCHEDULED: "hsl(var(--status-scheduled))",
+                    CANCELED: "hsl(var(--status-cancelled))",
+                    ABSENT: "hsl(var(--status-pending))",
+                  };
+                  return (
                   <div key={item.id} className="border-l-2 pl-4 py-1" style={{
-                    borderColor: item.status === "completed" ? "hsl(var(--status-completed))" : "hsl(var(--status-cancelled))"
+                    borderColor: statusColorMap[item.status] || "hsl(var(--border))"
                   }}>
                     <div className="flex items-center justify-between mb-1">
-                      <StatusBadge status={item.status === "completed" ? "completed" : "cancelled"} />
-                      <span className="text-xs text-muted-foreground">{item.date}</span>
+                      <StatusBadge status={item.status} label={statusMap[item.status]} />
+                      <span className="text-xs text-muted-foreground">{fromDateTimeLocal(item.startTime)}</span>
                     </div>
-                    <p className="text-sm font-medium text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.therapistName}</p>
+                    <p className="text-sm font-medium text-foreground">Sesión con {item.therapist.user.username}</p>
+                    <p className="text-xs text-muted-foreground">{item.therapist.user.email}</p>
                   </div>
-                ))}
+                );
+              })}
               </div>
               <button className="w-full mt-5 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
                 Ver todo el historial

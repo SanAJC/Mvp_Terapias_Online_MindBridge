@@ -9,10 +9,11 @@ const statusLabels: Record<SessionStatus, string> = {
 
 interface StatusBadgeProps {
   status: SessionStatus;
+  label?: string;
   className?: string;
 }
 
-export const StatusBadge = ({ status, className = "" }: StatusBadgeProps) => {
+export const StatusBadge = ({ status, label, className = "" }: StatusBadgeProps) => {
   const statusClass = {
     SCHEDULED: "status-scheduled",
     COMPLETED: "status-completed",
@@ -22,7 +23,7 @@ export const StatusBadge = ({ status, className = "" }: StatusBadgeProps) => {
 
   return (
     <span className={`${statusClass} ${className}`}>
-      {statusLabels[status]}
+      {label || statusLabels[status]}
     </span>
   );
 };

@@ -30,25 +30,13 @@ export class AppModule implements NestModule {
     consumer
       .apply(AuthMiddleware)
       .exclude(
+        { path: 'api/auth/login', method: RequestMethod.POST },
+        { path: 'api/auth/register', method: RequestMethod.POST },
+        { path: 'api/auth/refresh', method: RequestMethod.POST },
         { path: 'auth/login', method: RequestMethod.POST },
         { path: 'auth/register', method: RequestMethod.POST },
         { path: 'auth/refresh', method: RequestMethod.POST },
       )
-      .forRoutes(
-        { path: 'users', method: RequestMethod.ALL },
-        { path: 'users/:id', method: RequestMethod.ALL },
-        { path: 'patients', method: RequestMethod.ALL },
-        { path: 'patients/:id', method: RequestMethod.ALL },
-        { path: 'therapists', method: RequestMethod.ALL },
-        { path: 'therapists/:id', method: RequestMethod.ALL },
-        { path: 'sessions', method: RequestMethod.ALL },
-        { path: 'sessions/:id', method: RequestMethod.ALL },
-        { path: 'attendance', method: RequestMethod.ALL },
-        { path: 'attendance/:id', method: RequestMethod.ALL },
-        { path: 'clinical-notes', method: RequestMethod.ALL },
-        { path: 'clinical-notes/:id', method: RequestMethod.ALL },
-        { path: 'reports', method: RequestMethod.ALL },
-        { path: 'reports/:id', method: RequestMethod.ALL },
-      );
+      .forRoutes('*'); // Aplicar a todas las rutas excepto las excluidas
   }
 }

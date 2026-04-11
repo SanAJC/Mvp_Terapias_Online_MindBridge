@@ -21,6 +21,13 @@ export class PatientsService {
   getSessions(id: string) {
     return this.prisma.session.findMany({
       where: { patientId: id },
+      include: {
+        therapist: {
+          include: {
+            user: true
+          }
+        }
+      }
     });
   }
 

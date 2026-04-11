@@ -62,10 +62,6 @@ export const Sidebar = ({ role }: SidebarProps) => {
       </nav>
 
       <div className="p-3 border-t border-border space-y-1">
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary/60 w-full transition-colors">
-          <HelpCircle size={20} />
-          Centro de Ayuda
-        </button>
         <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary/60 w-full transition-colors" onClick={handleLogout}>
           <LogOut size={20} />
           Cerrar Sesión
