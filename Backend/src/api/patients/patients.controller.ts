@@ -7,7 +7,7 @@ import { PatientsPipe } from './pipes/patients.pipe';
 
 @Controller('patients')
 @UseGuards(RolesGuard)
-@Roles(Role.PATIENT)
+@Roles(Role.PATIENT, Role.COORDINATOR)
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 

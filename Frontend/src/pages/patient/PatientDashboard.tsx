@@ -3,17 +3,16 @@ import { PageTransition, staggerContainer, fadeInUp, fadeIn } from "@/components
 import { motion } from "framer-motion";
 import { Calendar, Video, FileText, Users, Sparkles, MoreVertical, Heart } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { sessionHistory } from "@/data/patientMockData";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import { usePatientsApi } from "@/connections/api/patients";
 import { useEffect, useState } from "react";
-import type { User, Session, SessionStatus } from "@/types";
+import type { Session, SessionStatus } from "@/types";
 import { toast } from "sonner";
 import { getTranslatedErrorMessage } from "@/lib/errorHandler";
 const PatientDashboard = () => {
   const { user } = useAuth();
-  const { getPatientSessions, getPatient } = usePatientsApi();
+  const { getPatientSessions } = usePatientsApi();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,6 +48,23 @@ const PatientDashboard = () => {
       day: "2-digit"
     });
   };
+
+  const formatTime = (dateTimeLocal: string) => {
+    if (!dateTimeLocal) return "";
+    const date = new Date(dateTimeLocal);
+    return date.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  };
+
+  const upcomingSessions = sessions
+    .filter(s => s.status === "SCHEDULED")
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+  const featuredSession = upcomingSessions[0];
+  const secondarySession = upcomingSessions[1];
   return (
     <DashboardLayout
       role="PATIENT"
@@ -80,58 +96,80 @@ const PatientDashboard = () => {
                   <button className="text-sm text-accent font-medium hover:underline">Ver calendario</button>
                 </div>
 
-                {/* Featured next session */}
-                <div className="brand-card-dark mb-4 relative overflow-hidden">
-                  <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/[0.04]" />
-                  <div className="absolute top-4 right-4 opacity-[0.07]">
-                    <Video size={44} />
+                {!featuredSession ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>Aún no cuentas con una próxima sesión programada.</p>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <Avatar className="w-16 h-16 border-2 border-white/20">
-                      <AvatarFallback className="bg-white/20 text-white text-lg font-semibold">EV</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-xs uppercase tracking-wider text-white/60 font-semibold">A continuación</p>
-                      <h3 className="text-xl font-bold text-white">Dra. Eleanor Vance</h3>
-                      <div className="flex items-center gap-1.5 mt-1 text-white/70 text-sm">
-                        <FileText size={14} />
-                        Session Terapeutica
+                ) : (
+                  <>
+                    {/* Featured next session */}
+                    <div className="brand-card-dark mb-4 relative overflow-hidden">
+                      <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/[0.04]" />
+                      <div className="absolute top-4 right-4 opacity-[0.07]">
+                        <Video size={44} />
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <Avatar className="w-16 h-16 border-2 border-white/20">
+                          <AvatarFallback className="bg-white/20 text-white text-lg font-semibold">
+                            {featuredSession.therapist.user.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="text-xs uppercase tracking-wider text-white/60 font-semibold">A continuación</p>
+                          <h3 className="text-xl font-bold text-white">{featuredSession.therapist.user.username}</h3>
+                          <div className="flex items-center gap-1.5 mt-1 text-white/70 text-sm">
+                            <FileText size={14} />
+                            Sesión
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-white">{fromDateTimeLocal(featuredSession.startTime)}</p>
+                          <p className="text-sm text-white/60">{formatTime(featuredSession.startTime)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        {featuredSession.meetingLink ? (
+                          <button className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors border border-white/20">
+                            <Video size={16} />
+                            <a href={featuredSession.meetingLink} target="_blank" rel="noopener noreferrer">Unirse a videollamada</a>
+                          </button>
+                        ) : (
+                          <button className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors border border-white/20">
+                            <Users size={16} />
+                            Asiste a tu Session
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-white">Hoy, 4:30 PM</p>
-                      <p className="text-sm text-white/60">Empieza en 45 minutos</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    <button className="flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors border border-white/20">
-                      <Video size={16} />
-                      Unirse a videollamada
-                    </button>
-                  </div>
-                </div>
 
-                {/* Secondary session */}
-                <div className="bg-secondary/50 rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Calendar size={18} className="text-accent" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground text-sm">Evaluación de Seguimiento</p>
-                      <p className="text-xs text-muted-foreground">Jueves, 12 Oct • 10:00 AM</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Profesional</p>
-                      <p className="text-sm font-medium text-foreground">Dra. Eleanor Vance</p>
-                    </div>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors">
-                      <MoreVertical size={16} className="text-muted-foreground" />
-                    </button>
-                  </div>
-                </div>
+                    {/* Secondary session */}
+                    {secondarySession && (
+                      <div className="bg-secondary/50 rounded-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                            <Calendar size={18} className="text-accent" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground text-sm">Próxima Sesión</p>
+                            <p className="text-xs text-muted-foreground">
+                              {fromDateTimeLocal(secondarySession.startTime)} • {formatTime(secondarySession.startTime)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Profesional</p>
+                            <p className="text-sm font-medium text-foreground">{secondarySession.therapist.user.username}</p>
+                          </div>
+                          <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors">
+                            <MoreVertical size={16} className="text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </motion.div>
 
               {/* Bottom row */}

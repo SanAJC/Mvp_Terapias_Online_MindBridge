@@ -1,170 +1,265 @@
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTransition, staggerContainer, fadeInUp, fadeIn } from "@/components/animations/PageTransition";
 import { motion } from "framer-motion";
-import { Calendar as CalendarIcon, Video, FileText, Clock, Filter, Award, TrendingUp, CheckCircle, UserX } from "lucide-react";
+import { Video, FileText, Clock, Award, TrendingUp, CheckCircle, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { MiniCalendar } from "@/components/shared/MiniCalendar";
-import { patientUpcomingSessions } from "@/data/patientMockData";
-import { useState } from "react";
+import { usePatientsApi } from "@/connections/api/patients";
+import { useAuth } from "@/context/AuthContext";
+import { getTranslatedErrorMessage } from "@/lib/errorHandler";
+import type { Session, SessionStatus } from "@/types";
+import { toast } from "sonner";
 
-const filterOptions = ["Todas", "Presencial", "Online"];
+const statusFilterOptions: { label: string; value: string }[] = [
+  { label: "Todas", value: "all" },
+  { label: "Programadas", value: "SCHEDULED" },
+  { label: "Completadas", value: "COMPLETED" },
+  { label: "Canceladas", value: "CANCELED" },
+];
 
 const PatientSessions = () => {
-  const [activeFilter, setActiveFilter] = useState("Todas");
+  const { user } = useAuth();
+  const { getPatientSessions } = usePatientsApi();
+
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Calendar
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+
+  useEffect(() => {
+    if (user?.id) loadSessions();
+  }, [user]);
+
+  const loadSessions = async () => {
+    try {
+      setLoading(true);
+      const data = await getPatientSessions(user!.id);
+      setSessions(data);
+    } catch (error) {
+      toast.error(getTranslatedErrorMessage(error, "Error al cargar las sesiones"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fechas con sesiones para el calendario
+  const sessionDates = [...new Set(
+    sessions.map(s => new Date(s.startTime).toISOString().split("T")[0])
+  )];
+
+  // Filtrado
+  const filtered = sessions.filter(s => {
+    const sessionDate = new Date(s.startTime).toISOString().split("T")[0];
+    if (selectedDate && sessionDate !== selectedDate) return false;
+    if (statusFilter !== "all" && s.status !== statusFilter) return false;
+    return true;
+  });
+
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date === selectedDate ? "" : date);
+  };
+
+  // Estadísticas
+  const completedCount = sessions.filter(s => s.status === "COMPLETED").length;
+  const scheduledCount = sessions.filter(s => s.status === "SCHEDULED").length;
+  const attendanceRate = sessions.length > 0
+    ? Math.round((completedCount / sessions.length) * 100)
+    : 0;
+
+  const formatDateTime = (iso: string) => {
+    const date = new Date(iso);
+    return {
+      date: date.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }),
+      time: date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+    };
+  };
+
+  const getTherapistInitials = (session: Session) => {
+    const name = session.therapist?.user?.username || "";
+    return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "T";
+  };
 
   return (
-    <DashboardLayout
-      role="PATIENT"
-      userName="Sofía Martínez"
-      userRole="Plan Premium"
-    >
+    <DashboardLayout role="PATIENT" userName={user?.username || "Paciente"} userRole="Paciente">
       <PageTransition>
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
           <motion.div variants={fadeInUp} className="mb-2">
-            <h1 className="text-2xl font-bold text-foreground">Gestión de Sesiones</h1>
+            <h1 className="text-2xl font-bold text-foreground">Mis Sesiones</h1>
             <p className="text-muted-foreground mt-1">Administra tus citas y revisa tu historial terapéutico.</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-            {/* Left - sessions list */}
+            {/* Lista de sesiones */}
             <div className="lg:col-span-2 space-y-4">
-              <motion.div variants={fadeInUp} className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">Mis Próximas Sesiones</h2>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors">
-                  <Filter size={16} className="text-muted-foreground" />
-                </button>
+              {/* Filtros de estado */}
+              <motion.div variants={fadeInUp} className="flex items-center gap-2 flex-wrap">
+                {statusFilterOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setStatusFilter(opt.value)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      statusFilter === opt.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                {(statusFilter !== "all" || selectedDate !== todayStr) && (
+                  <button
+                    onClick={() => { setStatusFilter("all"); setSelectedDate(todayStr); }}
+                    className="text-xs text-accent hover:underline ml-1"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
               </motion.div>
 
-              {patientUpcomingSessions.map((session) => (
-                <motion.div
-                  key={session.id}
-                  variants={fadeInUp}
-                  className="bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarFallback className="bg-accent/10 text-accent font-medium">
-                          {session.therapistName === "Sesión no asignada" ? <UserX size={18} /> : session.therapistName.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-semibold text-foreground">{session.therapistName}</h4>
-                        <p className="text-xs text-muted-foreground">{session.specialty}</p>
-                      </div>
-                    </div>
-                    <StatusBadge status={session.status === "scheduled" ? "scheduled" : session.status === "completed" ? "completed" : "cancelled"} />
-                  </div>
+              {/* Contador */}
+              <motion.div variants={fadeInUp} className="flex items-center gap-2">
+                <h2 className="text-base font-semibold text-foreground">Sesiones</h2>
+                <span className="status-active text-xs">{filtered.length} resultados</span>
+              </motion.div>
 
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex items-center gap-1.5 bg-accent/10 text-accent px-3 py-1.5 rounded-lg text-xs font-medium">
-                      <CalendarIcon size={13} />
-                      {session.date}, {session.time}
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-secondary px-3 py-1.5 rounded-lg text-xs font-medium text-foreground">
-                      <Video size={13} />
-                      Sesión {session.modality === "online" ? "Online" : "Presencial"}
-                    </div>
-                    {session.status === "scheduled" && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-status-active" />
-                    )}
-                  </div>
+              {/* Sesiones */}
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm bg-card rounded-xl border border-border">
+                  No se encontraron sesiones con los filtros aplicados.
+                </div>
+              ) : (
+                filtered.map(session => {
+                  const { date, time } = formatDateTime(session.startTime);
+                  const { time: endTime } = formatDateTime(session.endTime);
+                  const therapistName = session.therapist?.user?.username || "Terapeuta";
 
-                  <div className="flex gap-3">
-                    {session.canJoin && (
-                      <button className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                        <Video size={15} />
-                        Unirse a videollamada
-                      </button>
-                    )}
-                    {session.status === "scheduled" && (
-                      <button className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                        Ver indicaciones
-                      </button>
-                    )}
-                    {session.status === "completed" && (
-                      <>
-                        <button className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                          <FileText size={14} />
-                          Ver Notas de Resumen
-                        </button>
-                        <button className="text-sm text-accent font-medium hover:underline px-3">
-                          Agendar de nuevo
-                        </button>
-                      </>
-                    )}
-                    {session.status === "cancelled" && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Clock size={13} />
-                        {session.date} • {session.time}
+                  return (
+                    <motion.div
+                      key={session.id}
+                      variants={fadeInUp}
+                      className="bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarFallback className="bg-accent/10 text-accent font-medium">
+                              {getTherapistInitials(session)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="font-semibold text-foreground">{therapistName}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {session.therapist?.user?.email || ""}
+                            </p>
+                          </div>
+                        </div>
+                        <StatusBadge status={session.status} />
                       </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+
+                      <div className="flex items-center gap-3 mb-4 flex-wrap">
+                        <div className="flex items-center gap-1.5 bg-accent/10 text-accent px-3 py-1.5 rounded-lg text-xs font-medium">
+                          <Clock size={13} />
+                          {date} • {time} - {endTime}
+                        </div>
+                        {session.meetingLink && (
+                          <div className="flex items-center gap-1.5 bg-secondary px-3 py-1.5 rounded-lg text-xs font-medium text-foreground">
+                            <Video size={13} />
+                            Videollamada
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-3">
+                        {session.status === "SCHEDULED" && session.meetingLink && (
+                          <a
+                            href={session.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                          >
+                            <Video size={15} />
+                            Unirse a videollamada
+                          </a>
+                        )}
+                        {session.status === "COMPLETED" && (
+                          <button className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
+                            <FileText size={14} />
+                            Ver notas de sesión
+                          </button>
+                        )}
+                        {session.status === "SCHEDULED" && !session.meetingLink && (
+                          <button className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
+                            Ver indicaciones
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })
+              )}
             </div>
 
-            {/* Right sidebar */}
+            {/* Sidebar */}
             <div className="space-y-6">
               <motion.div variants={fadeIn}>
-                <MiniCalendar />
+                <MiniCalendar
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  highlightedDates={sessionDates}
+                />
               </motion.div>
 
-              {/* Filter */}
-              <motion.div variants={fadeIn} className="bg-card rounded-xl border border-border p-5 shadow-sm">
-                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Filtrar Sesiones</p>
-                <div className="flex gap-2">
-                  {filterOptions.map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setActiveFilter(f)}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        activeFilter === f
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Session summary */}
+              {/* Resumen */}
               <motion.div variants={fadeIn} className="brand-card-dark relative overflow-hidden">
                 <div className="absolute -bottom-6 -right-6 w-28 h-28 rounded-full bg-white/[0.04]" />
                 <div className="absolute top-4 right-4 opacity-[0.08]">
                   <Award size={36} />
                 </div>
                 <h3 className="text-lg font-bold mb-4">Resumen de Mis Sesiones</h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-xs text-white/60">Sesiones totales</p>
-                    <p className="text-2xl font-bold text-white">12</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/50">
-                      <TrendingUp size={12} />
-                      2 más que el mes pasado
+                {loading ? (
+                  <div className="h-24 bg-white/10 animate-pulse rounded-lg" />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <p className="text-xs text-white/60">Total</p>
+                        <p className="text-2xl font-bold text-white">{sessions.length}</p>
+                        <div className="flex items-center gap-1 mt-1 text-xs text-white/50">
+                          <TrendingUp size={12} />
+                          {scheduledCount} próximas
+                        </div>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <p className="text-xs text-white/60">Asistidas</p>
+                        <p className="text-2xl font-bold text-white">{completedCount}</p>
+                        <div className="flex items-center gap-1 mt-1 text-xs text-white/50">
+                          <CheckCircle size={12} />
+                          {attendanceRate}% asistencia
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-xs text-white/60">Sesiones asistidas</p>
-                    <p className="text-2xl font-bold text-white">10</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/50">
-                      <CheckCircle size={12} />
-                      83% de asistencia
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white/10 rounded-lg p-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
-                    <Award size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">Racha de bienestar</p>
-                    <p className="text-xs text-white/60">¡Has asistido a 4 sesiones consecutivas!</p>
-                  </div>
-                </div>
+                    {completedCount >= 4 && (
+                      <div className="bg-white/10 rounded-lg p-3 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+                          <Award size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white">Racha de bienestar</p>
+                          <p className="text-xs text-white/60">¡{completedCount} sesiones completadas!</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </motion.div>
             </div>
           </div>
