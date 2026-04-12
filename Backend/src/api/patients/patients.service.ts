@@ -54,6 +54,20 @@ export class PatientsService {
   getTherapists(id: string) {
     return this.prisma.patientTherapist.findMany({
       where: { patientId: id },
+      include: {
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
     

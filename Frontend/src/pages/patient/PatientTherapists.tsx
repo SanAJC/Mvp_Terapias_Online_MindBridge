@@ -1,11 +1,61 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTransition, staggerContainer, fadeInUp } from "@/components/animations/PageTransition";
 import { motion } from "framer-motion";
-import { Calendar, Clock, Star, ArrowRight, Stethoscope } from "lucide-react";
+import { Calendar, Clock, Stethoscope } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { assignedTherapists, exploreTherapists } from "@/data/patientMockData";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { usePatientsApi } from "@/connections/api/patients";
+import type { PatientTherapist, Session } from "@/types";
+import { toast } from "sonner";
+import { getTranslatedErrorMessage } from "@/lib/errorHandler";
 
 const PatientTherapists = () => {
+  const { user } = useAuth();
+  const { getPatientTherapists, getPatientSessions } = usePatientsApi();
+  const [therapists, setTherapists] = useState<PatientTherapist[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [therapistsData, sessionsData] = await Promise.all([
+        getPatientTherapists(user.id),
+        getPatientSessions(user.id)
+      ]);
+      setTherapists(therapistsData);
+      setSessions(sessionsData);
+    } catch (error) {
+      toast.error(getTranslatedErrorMessage(error, "Error al cargar terapeutas"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const getNextSessionForTherapist = (therapistProfileId: string) => {
+    const upcomingSessions = sessions
+      .filter(s => s.status === "SCHEDULED" && s.therapistId === therapistProfileId)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    
+    return upcomingSessions[0] || null;
+  };
+
+  const formatSessionDate = (dateTimeLocal: string) => {
+    if (!dateTimeLocal) return "";
+    const date = new Date(dateTimeLocal);
+    return date.toLocaleString("es-ES", {
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  };
   return (
     <DashboardLayout
       role="PATIENT"
@@ -23,11 +73,21 @@ const PatientTherapists = () => {
 
           {/* Assigned therapists */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            {assignedTherapists.map((therapist) => {
-              const initials = therapist.name.split(" ").filter(n => n.length > 2).map(n => n[0]).join("").slice(0, 2);
+            {therapists.length === 0 && !loading && (
+              <div className="col-span-full text-center py-10 text-muted-foreground">
+                <Stethoscope size={48} className="mx-auto mb-4 opacity-50" />
+                <p>Aún no tienes terapeutas asignados.</p>
+              </div>
+            )}
+            
+            {therapists.map((item) => {
+              const therapistName = item.therapist.user.username || "Terapeuta";
+              const initials = therapistName.substring(0, 2).toUpperCase();
+              const nextSession = getNextSessionForTherapist(item.therapist.id);
+
               return (
                 <motion.div
-                  key={therapist.id}
+                  key={item.id}
                   variants={fadeInUp}
                   className="bg-card rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
                 >
@@ -39,21 +99,19 @@ const PatientTherapists = () => {
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-foreground">{therapist.name}</h3>
-                        {therapist.status === "active" && (
-                          <span className="status-active text-[10px]">ACTIVO</span>
-                        )}
+                        <h3 className="text-lg font-bold text-foreground">{therapistName}</h3>
+                        <span className="status-active text-[10px]">ACTIVO</span>
                       </div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-accent">{therapist.specialty}</p>
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{therapist.description}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-accent">{item.therapist.specialization}</p>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">Terapeuta profesional especializado y asignado para acompañarte en tu proceso.</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    {therapist.nextSession ? (
+                    {nextSession ? (
                       <>
                         <Calendar size={15} className="text-accent" />
-                        <span>Próxima sesión: {therapist.nextSession}</span>
+                        <span>Próxima sesión: {formatSessionDate(nextSession.startTime)}</span>
                       </>
                     ) : (
                       <>
@@ -64,57 +122,19 @@ const PatientTherapists = () => {
                   </div>
 
                   <div className="flex gap-3">
-                    <button className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                      Agendar Cita
-                    </button>
+                    {nextSession && nextSession.meetingLink ? (
+                      <button className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                        <a href={nextSession.meetingLink} target="_blank" rel="noopener noreferrer">Unirse a Cita</a>
+                      </button>
+                    ) : (
+                      <button className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                         Agendar Cita
+                      </button>
+                    )}
                     <button className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
                       Ver Perfil
                     </button>
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Explore specialists */}
-          <motion.div variants={fadeInUp}>
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Explorar Especialistas</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">Basado en tus objetivos de salud y preferencias.</p>
-              </div>
-              <button className="flex items-center gap-1 text-sm text-accent font-medium hover:underline">
-                Ver todos <ArrowRight size={14} />
-              </button>
-            </div>
-          </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            {exploreTherapists.map((t) => {
-              const initials = t.name.split(" ").filter(n => n.length > 2).map(n => n[0]).join("").slice(0, 2);
-              return (
-                <motion.div
-                  key={t.id}
-                  variants={fadeInUp}
-                  className="bg-card rounded-xl border border-border p-5 text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
-                >
-                  <div className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full bg-accent/[0.04]" />
-                  <div className="relative inline-block mb-3">
-                    <Avatar className="w-16 h-16">
-                      <AvatarFallback className="bg-accent/10 text-accent font-semibold text-lg">{initials}</AvatarFallback>
-                    </Avatar>
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-status-active border-2 border-card" />
-                  </div>
-                  <h4 className="font-semibold text-foreground text-sm">{t.name}</h4>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mt-0.5">{t.specialty}</p>
-                  <div className="flex items-center justify-center gap-1 mt-2 text-xs">
-                    <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold text-foreground">{t.rating}</span>
-                    <span className="text-muted-foreground">({t.reviews} reseñas)</span>
-                  </div>
-                  <button className="w-full mt-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                    Ver Perfil
-                  </button>
                 </motion.div>
               );
             })}
