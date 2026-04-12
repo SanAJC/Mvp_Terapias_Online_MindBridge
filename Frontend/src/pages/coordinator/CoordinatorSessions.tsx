@@ -28,9 +28,10 @@ const CoordinatorSessions = () => {
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const getLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
   // Calendar date filter
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDate(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
 
   // Cargar sesiones al montar el componente
@@ -52,12 +53,11 @@ const CoordinatorSessions = () => {
 
   // Extraer fechas únicas de las sesiones para el calendario
   const sessionDates = [...new Set(sessions.map((s) => {
-    const date = new Date(s.startTime);
-    return date.toISOString().split('T')[0];
+    return getLocalDate(new Date(s.startTime));
   }))];
 
   const filtered = sessions.filter((s) => {
-    const sessionDate = new Date(s.startTime).toISOString().split('T')[0];
+    const sessionDate = getLocalDate(new Date(s.startTime));
     
     // Filter by selected calendar date
     if (selectedDate && sessionDate !== selectedDate) return false;

@@ -4,6 +4,7 @@ import { AddPatientDto } from './dto/add-patient';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { TherapistsPipe } from './pipes/therapits.pipe';
 
 @Controller('therapists')
 @UseGuards(RolesGuard)
@@ -12,7 +13,7 @@ export class TherapistsController {
   constructor(private readonly therapistsService: TherapistsService) {}
 
   @Post('patients')
-  addPatient(@Body() addPatientDto: AddPatientDto) {
+  addPatient(@Body(TherapistsPipe) addPatientDto: AddPatientDto) {
     return this.therapistsService.addPatient(addPatientDto);
   }
 

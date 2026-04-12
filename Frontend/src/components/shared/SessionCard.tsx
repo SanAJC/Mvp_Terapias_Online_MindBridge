@@ -37,22 +37,14 @@ export const SessionCard = ({ session, variant = "therapist" }: SessionCardProps
         isHighlighted ? "border-accent border-2" : "border-border"
       }`}
     >
-      {variant === "coordinator" && (
-        <div className={`w-14 h-14 rounded-lg flex flex-col items-center justify-center text-xs font-semibold ${
-          session.status === "CANCELED" ? "bg-status-cancelled/10 text-status-cancelled" :
-          session.status === "COMPLETED" ? "bg-status-completed/10 text-status-completed" :
-          "bg-accent/10 text-accent"
-        }`}>
-          <span className="text-sm font-bold">{formatTime(startDate)}</span>
-          <span className="text-[10px]">{formatDate(startDate)}</span>
-        </div>
-      )}
-
-      {variant === "therapist" && (
-        <Avatar className="w-14 h-14">
-          <AvatarFallback className="bg-muted text-muted-foreground font-medium">{initials}</AvatarFallback>
-        </Avatar>
-      )}
+      <div className={`w-14 h-14 rounded-lg flex flex-col items-center justify-center text-xs font-semibold shrink-0 ${
+        session.status === "CANCELED" ? "bg-status-cancelled/10 text-status-cancelled" :
+        session.status === "COMPLETED" ? "bg-status-completed/10 text-status-completed" :
+        "bg-accent/10 text-accent"
+      }`}>
+        <span className="text-sm font-bold">{formatTime(startDate)}</span>
+        <span className="text-[10px]">{formatDate(startDate)}</span>
+      </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">

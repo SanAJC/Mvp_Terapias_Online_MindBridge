@@ -9,11 +9,14 @@ import { getTranslatedErrorMessage } from "@/lib/errorHandler";
 import type { Session, SessionStatus, SessionFormData, User } from "@/types";
 import { CalendarPlus, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 interface SessionFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session?: Session | null;
+  prefilledTherapistId?: string;
+  prefilledPatientId?: string;
   onSave: (formData: SessionFormData) => void;
 }
 
@@ -26,9 +29,10 @@ const emptyForm: SessionFormData = {
   status: "SCHEDULED",
 };
 
-export const SessionFormModal = ({ open, onOpenChange, session, onSave }: SessionFormModalProps) => {
+export const SessionFormModal = ({ open, onOpenChange, session, prefilledTherapistId, prefilledPatientId, onSave }: SessionFormModalProps) => {
   const isEdit = !!session;
   const { getUsers } = useUsersApi();
+  const { user } = useAuth();
   
   const [form, setForm] = useState<SessionFormData>(emptyForm);
   const [therapists, setTherapists] = useState<User[]>([]);
@@ -54,7 +58,11 @@ export const SessionFormModal = ({ open, onOpenChange, session, onSave }: Sessio
         status: session.status,
       });
     } else {
-      setForm(emptyForm);
+      setForm({
+        ...emptyForm,
+        therapistId: prefilledTherapistId || "",
+        patientId: prefilledPatientId || "",
+      });
     }
   }, [session, open]);
 
@@ -62,7 +70,15 @@ export const SessionFormModal = ({ open, onOpenChange, session, onSave }: Sessio
     try {
       setLoadingUsers(true);
       const users = await getUsers();
-      setTherapists(users.filter((u: User) => u.role === "THERAPIST"));
+      const allTherapists = users.filter((u: User) => u.role === "THERAPIST");
+      
+      // Si el que abrió el modal es un terapeuta, solo cargarlo a él como opción
+      if (user?.role === "THERAPIST") {
+        setTherapists(allTherapists.filter((u: User) => u.id === user.id));
+      } else {
+        setTherapists(allTherapists);
+      }
+      
       setPatients(users.filter((u: User) => u.role === "PATIENT"));
     } catch (error) {
       toast.error(getTranslatedErrorMessage(error, "Error al cargar usuarios"));
@@ -132,7 +148,11 @@ export const SessionFormModal = ({ open, onOpenChange, session, onSave }: Sessio
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="therapistId">Terapeuta</Label>
-                <Select value={form.therapistId} onValueChange={(v) => setForm({ ...form, therapistId: v })}>
+                <Select 
+                  value={form.therapistId} 
+                  onValueChange={(v) => setForm({ ...form, therapistId: v })}
+                  disabled={user?.role === "THERAPIST"}
+                >
                   <SelectTrigger id="therapistId">
                     <SelectValue placeholder="Seleccionar terapeuta" />
                   </SelectTrigger>

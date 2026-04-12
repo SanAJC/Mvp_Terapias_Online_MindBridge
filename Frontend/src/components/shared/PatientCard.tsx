@@ -1,19 +1,32 @@
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Calendar, Clock, MoreHorizontal, FileText, StickyNote } from "lucide-react";
-import type { Patient } from "@/types";
+import type { PatientTherapist, Session } from "@/types";
 import { fadeInUp } from "@/components/animations/PageTransition";
 
 interface PatientCardProps {
-  patient: Patient;
-  onAddNote?: (patient: Patient) => void;
-  onViewHistory?: (patient: Patient) => void;
-  onSchedule?: (patient: Patient) => void;
+  item: PatientTherapist;
+  nextSession?: Session | null;
+  onAddNote?: (item: PatientTherapist) => void;
+  onViewHistory?: (item: PatientTherapist) => void;
+  onSchedule?: (item: PatientTherapist) => void;
 }
 
-export const PatientCard = ({ patient, onAddNote, onViewHistory, onSchedule }: PatientCardProps) => {
-  const initials = patient.name.split(" ").map(n => n[0]).join("").slice(0, 2);
-  const isPending = patient.nextSession?.startsWith("Hoy");
+export const PatientCard = ({ item, nextSession, onAddNote, onViewHistory, onSchedule }: PatientCardProps) => {
+  const patientName = item.patient?.user?.username || "Paciente";
+  const initials = patientName.substring(0, 2).toUpperCase();
+  const nextSessionDate = nextSession ? new Date(nextSession.startTime) : null;
+  const isPending = nextSession && (nextSessionDate!.getTime() - new Date().getTime()) < 1000 * 60 * 60 * 24; // Less than 24 hours
+
+  const formatSessionDate = (date: Date) => {
+    return date.toLocaleString("es-ES", {
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  };
 
   return (
     <motion.div variants={fadeInUp} className="bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
@@ -25,8 +38,8 @@ export const PatientCard = ({ patient, onAddNote, onViewHistory, onSchedule }: P
             <AvatarFallback className="bg-muted text-muted-foreground font-medium text-lg">{initials}</AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="font-semibold text-foreground">{patient.name}</h4>
-            <span className="status-badge bg-accent/12 text-accent text-xs mt-1">{patient.therapyType}</span>
+            <h4 className="font-semibold text-foreground">{patientName}</h4>
+            <span className="status-badge bg-accent/12 text-accent text-xs mt-1">{"Terapia Personalizada"}</span>
           </div>
         </div>
         <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors">
@@ -42,7 +55,7 @@ export const PatientCard = ({ patient, onAddNote, onViewHistory, onSchedule }: P
             <span className="text-status-pending">⚠</span>
             <div>
               <p className="text-[10px] font-semibold uppercase text-status-pending tracking-wider">Sesión Pendiente</p>
-              <p className="font-medium text-foreground">{patient.nextSession}</p>
+              <p className="font-medium text-foreground">{formatSessionDate(nextSessionDate!)}</p>
             </div>
           </>
         ) : (
@@ -50,7 +63,7 @@ export const PatientCard = ({ patient, onAddNote, onViewHistory, onSchedule }: P
             <Calendar size={16} className="text-accent" />
             <div>
               <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Próxima Sesión</p>
-              <p className="font-medium text-foreground">{patient.nextSession}</p>
+              <p className="font-medium text-foreground">{nextSessionDate ? formatSessionDate(nextSessionDate) : "No agendada"}</p>
             </div>
           </>
         )}
@@ -59,16 +72,16 @@ export const PatientCard = ({ patient, onAddNote, onViewHistory, onSchedule }: P
       <div className="flex justify-between text-xs text-muted-foreground mb-4">
         <div>
           <p className="uppercase text-[10px] font-semibold tracking-wider">Última Sesión</p>
-          <p className="text-foreground mt-0.5">{patient.lastSession}</p>
+          <p className="text-foreground mt-0.5">--</p>
         </div>
         <div className="text-right">
           <p className="uppercase text-[10px] font-semibold tracking-wider">Enfoque</p>
-          <p className="text-foreground mt-0.5">{patient.focus}</p>
+          <p className="text-foreground mt-0.5">General</p>
         </div>
       </div>
 
       <button
-        onClick={() => onViewHistory?.(patient)}
+        onClick={() => onViewHistory?.(item)}
         className="w-full py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors mb-2 flex items-center justify-center gap-2"
       >
         <FileText size={14} />
@@ -76,14 +89,14 @@ export const PatientCard = ({ patient, onAddNote, onViewHistory, onSchedule }: P
       </button>
       <div className="flex gap-2">
         <button
-          onClick={() => onAddNote?.(patient)}
+          onClick={() => onAddNote?.(item)}
           className="flex-1 py-2 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors flex items-center justify-center gap-1.5"
         >
           <StickyNote size={14} />
           Añadir nota
         </button>
         <button
-          onClick={() => onSchedule?.(patient)}
+          onClick={() => onSchedule?.(item)}
           className="flex-1 py-2 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors flex items-center justify-center gap-1.5"
         >
           <Clock size={14} />

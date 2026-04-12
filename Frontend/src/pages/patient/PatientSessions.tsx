@@ -28,7 +28,8 @@ const PatientSessions = () => {
   const [statusFilter, setStatusFilter] = useState("all");
 
   // Calendar
-  const todayStr = new Date().toISOString().split("T")[0];
+  const getLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const todayStr = getLocalDate(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
 
   useEffect(() => {
@@ -48,13 +49,13 @@ const PatientSessions = () => {
   };
 
   // Fechas con sesiones para el calendario
-  const sessionDates = [...new Set(
-    sessions.map(s => new Date(s.startTime).toISOString().split("T")[0])
-  )];
+  const sessionDates = [...new Set(sessions.map((s) => {
+    return getLocalDate(new Date(s.startTime));
+  }))];
 
-  // Filtrado
-  const filtered = sessions.filter(s => {
-    const sessionDate = new Date(s.startTime).toISOString().split("T")[0];
+  const filtered = sessions.filter((s) => {
+    const sessionDate = getLocalDate(new Date(s.startTime));
+    
     if (selectedDate && sessionDate !== selectedDate) return false;
     if (statusFilter !== "all" && s.status !== statusFilter) return false;
     return true;
