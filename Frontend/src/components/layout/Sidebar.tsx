@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Logo } from "@/components/shared/Logo";
-import { LayoutDashboard, Calendar, Users, BarChart3, HelpCircle, LogOut, Stethoscope } from "lucide-react";
+import { LayoutDashboard, Calendar, Users, BarChart3, LogOut, Stethoscope, UserCircle } from "lucide-react";
 import type { UserRole } from "@/types";
 import { useAuthApi } from "@/connections/api/Auth";
 interface SidebarProps {
@@ -12,6 +12,7 @@ const navItems: Record<UserRole, { label: string; path: string; icon: React.Reac
     { label: "Resumen", path: "/terapeuta", icon: <LayoutDashboard size={20} /> },
     { label: "Sesiones", path: "/terapeuta/sesiones", icon: <Calendar size={20} /> },
     { label: "Pacientes", path: "/terapeuta/pacientes", icon: <Users size={20} /> },
+    { label: "Mi Perfil", path: "/terapeuta/perfil", icon: <UserCircle size={20} /> },
   ],
   COORDINATOR: [
     { label: "Resumen", path: "/coordinador", icon: <LayoutDashboard size={20} /> },
@@ -23,6 +24,7 @@ const navItems: Record<UserRole, { label: string; path: string; icon: React.Reac
     { label: "Resumen", path: "/paciente", icon: <LayoutDashboard size={20} /> },
     { label: "Sesiones", path: "/paciente/sesiones", icon: <Calendar size={20} /> },
     { label: "Terapeutas", path: "/paciente/terapeutas", icon: <Stethoscope size={20} /> },
+    { label: "Mi Perfil", path: "/paciente/perfil", icon: <UserCircle size={20} /> },
   ],
 };
 

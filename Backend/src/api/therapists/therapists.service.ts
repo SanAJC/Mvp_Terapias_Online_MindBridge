@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AddPatientDto } from './dto/add-patient';
+import { UpdateTherapistDto } from './dto/update-therapist.dto';
 import { PrismaService } from '../../database/prisma.service';
 @Injectable()
 export class TherapistsService {
@@ -9,6 +10,19 @@ export class TherapistsService {
   getTherapist(id: string) {
     return this.prisma.therapistProfile.findUnique({
       where: { id },
+      include: {
+        user: { select: { id: true, username: true, email: true, role: true } },
+      },
+    });
+  }
+
+  updateTherapist(id: string, dto: UpdateTherapistDto) {
+    return this.prisma.therapistProfile.update({
+      where: { id },
+      data: { specialization: dto.specialization },
+      include: {
+        user: { select: { id: true, username: true, email: true, role: true } },
+      },
     });
   }
 

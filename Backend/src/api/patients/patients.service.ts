@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
-
+import { UpdatePatientDto } from './dto/update-patient.dto';
 
 @Injectable()
 export class PatientsService {
@@ -9,6 +9,26 @@ export class PatientsService {
   getPatient(id: string) {
     return this.prisma.patientProfile.findUnique({
       where: { id },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, role: true },
+        },
+      },
+    });
+  }
+
+  updatePatient(id: string, dto: UpdatePatientDto) {
+    return this.prisma.patientProfile.update({
+      where: { id },
+      data: {
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+        phone: dto.phone,
+      },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, role: true },
+        },
+      },
     });
   }
 

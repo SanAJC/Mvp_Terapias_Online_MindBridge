@@ -9,6 +9,7 @@ import Register from "../pages/auth/Register";
 import TherapistDashboard from "../pages/therapist/TherapistDashboard";
 import TherapistSessions from "../pages/therapist/TherapistSessions";
 import TherapistPatients from "../pages/therapist/TherapistPatients";
+import TherapistProfile from "../pages/therapist/TherapistProfile";
 
 import CoordinatorDashboard from "../pages/coordinator/CoordinatorDashboard";
 import CoordinatorSessions from "../pages/coordinator/CoordinatorSessions";
@@ -18,6 +19,7 @@ import CoordinatorReports from "../pages/coordinator/CoordinatorReports";
 import PatientDashboard from "../pages/patient/PatientDashboard";
 import PatientSessions from "../pages/patient/PatientSessions";
 import PatientTherapists from "../pages/patient/PatientTherapists";
+import PatientProfile from "../pages/patient/PatientProfile";
 
 import { permissionRole} from "./ProtectedRoute";
 import ProtectedRoute from "./ProtectedRoute";
@@ -52,6 +54,15 @@ export const AppRoutes = () => {
                 permissionRole("THERAPIST") ? (
                 <ProtectedRoute>
                     <TherapistPatients />
+                </ProtectedRoute>
+                ) : (
+                    <Navigate to="/" />
+                )
+            } />
+            <Route path="/terapeuta/perfil" element={
+                permissionRole("THERAPIST") ? (
+                <ProtectedRoute>
+                    <TherapistProfile />
                 </ProtectedRoute>
                 ) : (
                     <Navigate to="/" />
@@ -119,6 +130,15 @@ export const AppRoutes = () => {
                 permissionRole("PATIENT") ? (
                 <ProtectedRoute>
                     <PatientTherapists />
+                </ProtectedRoute>
+                ) : (
+                    <Navigate to="/" />
+                )
+            } />
+            <Route path="/paciente/perfil" element={
+                permissionRole("PATIENT") ? (
+                <ProtectedRoute>
+                    <PatientProfile />
                 </ProtectedRoute>
                 ) : (
                     <Navigate to="/" />

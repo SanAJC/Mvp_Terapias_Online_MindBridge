@@ -2,13 +2,13 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/shared/Logo";
-import { ArrowRight, ShieldCheck, Video, CalendarCheck, Users, Heart, Star } from "lucide-react";
+import { ArrowRight, ShieldCheck, Video, CalendarCheck, Users, Heart, Star, ChartLine } from "lucide-react";
 import heroImg from "@/assets/hero-landing.jpg";
 import LegalModal from "@/components/shared/LegalModal";
 
 const features = [
-  { icon: CalendarCheck, title: "Gestión de Citas", desc: "Agenda y administra tus sesiones terapéuticas de forma sencilla desde cualquier dispositivo." },
-  { icon: Video, title: "Telemedicina", desc: "Sesiones virtuales seguras con tu terapeuta desde la comodidad de tu hogar." },
+  { icon: ChartLine, title: "Seguimiento de progreso", desc: "Realiza un seguimiento de tu progreso terapéutico y alcanza tus metas de bienestar." },
+  { icon: Video, title: "Sessiones", desc: "Sesiones virtuales seguras con tu terapeuta desde la comodidad de tu hogar." },
   { icon: ShieldCheck, title: "Privacidad Total", desc: "Cumplimiento HIPAA y encriptación de datos para proteger tu información sensible." },
   { icon: Users, title: "Equipo Profesional", desc: "Red de terapeutas certificados especializados en diversas áreas de la salud mental." },
 ];

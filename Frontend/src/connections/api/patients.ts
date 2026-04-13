@@ -21,10 +21,16 @@ export const usePatientsApi = () => {
     return response.data;
   };
 
+  const updatePatient = async (userId: string, data: { dateOfBirth?: string; phone?: string }) => {
+    const response = await axiosInstance.patch(`/patients/${userId}`, data);
+    return response.data;
+  };
+
   return {
     getPatient,
     getPatientClinicalNotes,
     getPatientSessions,
     getPatientTherapists,
+    updatePatient,
   };
 };

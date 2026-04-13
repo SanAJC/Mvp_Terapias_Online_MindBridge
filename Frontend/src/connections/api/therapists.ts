@@ -31,11 +31,17 @@ export const useTherapistsApi = () => {
     return response.data;
   };
 
+  const updateTherapist = async (userId: string, data: { specialization?: string }) => {
+    const response = await axiosInstance.patch(`/therapists/${userId}`, data);
+    return response.data;
+  };
+
   return {
     getTherapist,
     getTherapistPatients,
     getTherapistSessions,
     getTherapistClinicalNotes,
     addPatient,
+    updateTherapist,
   };
 };

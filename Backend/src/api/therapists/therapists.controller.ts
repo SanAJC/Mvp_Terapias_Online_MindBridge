@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { TherapistsService } from './therapists.service';
 import { AddPatientDto } from './dto/add-patient';
+import { UpdateTherapistDto } from './dto/update-therapist.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { TherapistsPipe } from './pipes/therapits.pipe';
+import { TherapistIdPipe } from './pipes/therapist-id.pipe';
 
 @Controller('therapists')
 @UseGuards(RolesGuard)
@@ -17,9 +19,15 @@ export class TherapistsController {
     return this.therapistsService.addPatient(addPatientDto);
   }
 
+  // :id recibe userId → TherapistIdPipe lo convierte a profileId
   @Get(':id')
-  getTherapist(@Param('id') id: string) {
+  getTherapist(@Param('id', TherapistIdPipe) id: string) {
     return this.therapistsService.getTherapist(id);
+  }
+
+  @Patch(':id')
+  updateTherapist(@Param('id', TherapistIdPipe) id: string, @Body() dto: UpdateTherapistDto) {
+    return this.therapistsService.updateTherapist(id, dto);
   }
 
   @Get(':id/patients')
@@ -31,6 +39,7 @@ export class TherapistsController {
   getTherapistSessions(@Param('id') id: string) {
     return this.therapistsService.getTherapistSessions(id);
   }
+
   @Get(':id/clinical-notes')
   getTherapistClinicalNotes(@Param('id') id: string) {
     return this.therapistsService.getTherapistClinicalNotes(id);
