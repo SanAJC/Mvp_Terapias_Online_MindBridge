@@ -1,14 +1,14 @@
-import { IsString, IsNotEmpty } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 
 export class CreateClinicalNoteDto {
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    sessionId : string
+    sessionId?: string
 
     @IsNotEmpty()
     @IsString()
-    patientId : string
+    patientId: string
 
     @IsNotEmpty()
     @IsString()

@@ -1,46 +1,97 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, FileText, CalendarCheck } from "lucide-react";
-import type { Patient, Session, ClinicalNote } from "@/types";
+import { User, FileText, CalendarCheck, Loader2 } from "lucide-react";
+import { useClinicalNotesApi } from "@/connections/api/clinicalNotes";
+import { getTranslatedErrorMessage } from "@/lib/errorHandler";
+import { toast } from "sonner";
+import type { PatientTherapist, Session, ClinicalNote } from "@/types";
 
 interface NoteFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  patient: Patient;
+  patient: PatientTherapist;
+  therapistId: string;
   therapistName: string;
   sessions: Session[];
-  onSave: (note: ClinicalNote) => void;
+  onSaved?: () => void;
+  isEdit?: boolean;
+  noteToEdit?: ClinicalNote;
 }
 
-export const NoteFormModal = ({ open, onOpenChange, patient, therapistName, sessions, onSave }: NoteFormModalProps) => {
+export const NoteFormModal = ({
+  open,
+  onOpenChange,
+  patient,
+  therapistId,
+  therapistName,
+  sessions,
+  onSaved,
+  isEdit,
+  noteToEdit,
+}: NoteFormModalProps) => {
+  const { createNote, updateNote } = useClinicalNotesApi();
   const [content, setContent] = useState("");
   const [selectedSession, setSelectedSession] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
-  const initials = patient.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+  const patientName = patient.patient?.user?.username || "Paciente";
+  const initials = patientName.substring(0, 2).toUpperCase();
 
+  useEffect(() => {
+    if (open) {
+      if (isEdit && noteToEdit) {
+        setContent(noteToEdit.content || "");
+        setSelectedSession(noteToEdit.sessionId || "none");
+      } else {
+        setContent("");
+        setSelectedSession("");
+      }
+    }
+  }, [open, isEdit, noteToEdit]);
+
+  // Filter sessions that belong to this patient
   const patientSessions = sessions.filter(
-    (s) => s.patientName.toLowerCase().includes(patient.name.split(" ")[0].toLowerCase())
+    (s) => s.patientId === patient.patient?.id && s.status === "COMPLETED"
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!content.trim()) return;
-    const session = patientSessions.find(s => s.id === selectedSession);
-    onSave({
-      id: crypto.randomUUID(),
-      patientId: patient.id,
-      patientName: patient.name,
-      therapistName,
-      sessionId: selectedSession || undefined,
-      sessionLabel: session ? `Sesión ${session.date} (${session.startTime})` : undefined,
-      content: content.trim(),
-      createdAt: new Date().toISOString(),
+    try {
+      setSaving(true);
+      if (isEdit && noteToEdit) {
+        await updateNote(noteToEdit.id, {
+          patientId: noteToEdit.patientId,
+          therapistId,
+          sessionId: selectedSession === "none" ? undefined : selectedSession || undefined,
+          content: content.trim(),
+        });
+        toast.success("Nota evolutiva actualizada correctamente");
+      } else {
+        await createNote({
+          patientId: patient.patient.id,
+          therapistId,
+          sessionId: selectedSession === "none" ? undefined : selectedSession || undefined,
+          content: content.trim(),
+        });
+        toast.success("Nota evolutiva guardada correctamente");
+      }
+      onOpenChange(false);
+      onSaved?.();
+    } catch (error) {
+      toast.error(getTranslatedErrorMessage(error, isEdit ? "Error al actualizar la nota" : "Error al guardar la nota"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatSessionLabel = (session: Session) => {
+    const date = new Date(session.startTime);
+    return date.toLocaleString("es-ES", {
+      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
     });
-    setContent("");
-    setSelectedSession("");
-    onOpenChange(false);
   };
 
   return (
@@ -49,7 +100,7 @@ export const NoteFormModal = ({ open, onOpenChange, patient, therapistName, sess
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText size={18} className="text-accent" />
-            Nueva Nota Evolutiva
+            {isEdit ? "Editar Nota Evolutiva" : "Nueva Nota Evolutiva"}
           </DialogTitle>
         </DialogHeader>
 
@@ -61,7 +112,7 @@ export const NoteFormModal = ({ open, onOpenChange, patient, therapistName, sess
             </Avatar>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paciente</p>
-              <p className="font-semibold text-foreground">{patient.name}</p>
+              <p className="font-semibold text-foreground">{patientName}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -84,13 +135,14 @@ export const NoteFormModal = ({ open, onOpenChange, patient, therapistName, sess
                   <SelectValue placeholder="Seleccionar sesión (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Sin sesión asociada</SelectItem>
                   {patientSessions.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.date} — {s.startTime} ({s.status})
+                      {formatSessionLabel(s)}
                     </SelectItem>
                   ))}
                   {patientSessions.length === 0 && (
-                    <SelectItem value="none" disabled>Sin sesiones</SelectItem>
+                    <SelectItem value="empty" disabled>Sin sesiones completadas</SelectItem>
                   )}
                 </SelectContent>
               </Select>
@@ -115,9 +167,10 @@ export const NoteFormModal = ({ open, onOpenChange, patient, therapistName, sess
           </button>
           <button
             onClick={handleSave}
-            disabled={!content.trim()}
-            className="px-5 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+            disabled={!content.trim() || saving}
+            className="px-5 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
           >
+            {saving && <Loader2 size={14} className="animate-spin" />}
             Guardar Nota
           </button>
         </DialogFooter>

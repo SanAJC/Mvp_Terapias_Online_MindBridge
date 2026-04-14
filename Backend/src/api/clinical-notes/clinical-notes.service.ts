@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateClinicalNoteDto } from './dto/create-clinical-note.dto';
 import { UpdateClinicalNoteDto } from './dto/update-clinical-note.dto';
 import { PrismaService } from 'src/database/prisma.service';
@@ -8,21 +8,42 @@ import { Prisma } from '@prisma/client';
 export class ClinicalNotesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createClinicalNoteDto: CreateClinicalNoteDto) {
-    return this.prisma.clinicalNote.create({
-      data: {
-        sessionId: createClinicalNoteDto.sessionId,
-        therapistId: createClinicalNoteDto.therapistId,
-        patientId: createClinicalNoteDto.patientId,
-        content: createClinicalNoteDto.content,
+  async create(createClinicalNoteDto: CreateClinicalNoteDto) {
+    const therapistProfile = await this.prisma.therapistProfile.findUnique({
+      where: { userId: createClinicalNoteDto.therapistId }
+    });
+
+    if (!therapistProfile) {
+      throw new BadRequestException("No se encontró el perfil del terapeuta");
+    }
+
+    const data: Prisma.ClinicalNoteUncheckedCreateInput = {
+      therapistId: therapistProfile.id,
+      patientId: createClinicalNoteDto.patientId,
+      content: createClinicalNoteDto.content,
+      sessionId: createClinicalNoteDto.sessionId || (undefined as unknown as string),
+    };
+    return this.prisma.clinicalNote.create({ data });
+  }
+
+  findOne(id: string) {
+    return this.prisma.clinicalNote.findUnique({
+      where: { id },
+      include: {
+        therapist: { include: { user: { select: { username: true } } } },
+        session: { select: { id: true, startTime: true } },
       },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.session.findMany({
-      where: { id },
-      orderBy:{ createdAt: 'desc'}
+  findByPatient(patientId: string) {
+    return this.prisma.clinicalNote.findMany({
+      where: { patientId },
+      include: {
+        therapist: { include: { user: { select: { username: true } } } },
+        session: { select: { id: true, startTime: true } },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

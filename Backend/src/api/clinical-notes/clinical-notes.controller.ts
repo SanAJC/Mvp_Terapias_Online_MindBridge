@@ -1,29 +1,39 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ClinicalNotesService } from './clinical-notes.service';
 import { CreateClinicalNoteDto } from './dto/create-clinical-note.dto';
 import { UpdateClinicalNoteDto } from './dto/update-clinical-note.dto';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('clinical-notes')
+@UseGuards(RolesGuard)
+@Roles(Role.THERAPIST)
 export class ClinicalNotesController {
   constructor(private readonly clinicalNotesService: ClinicalNotesService) {}
 
   @Post()
-  CreateNote(@Body() createClinicalNoteDto: CreateClinicalNoteDto) {
+  createNote(@Body() createClinicalNoteDto: CreateClinicalNoteDto) {
     return this.clinicalNotesService.create(createClinicalNoteDto);
   }
 
+  @Get('patient/:patientId')
+  getByPatient(@Param('patientId') patientId: string) {
+    return this.clinicalNotesService.findByPatient(patientId);
+  }
+
   @Get(':id')
-  GetNote(@Param('id') id: string) {
+  getNote(@Param('id') id: string) {
     return this.clinicalNotesService.findOne(id);
   }
 
   @Patch(':id')
-  UpdateNote(@Param('id') id: string, @Body() updateClinicalNoteDto: UpdateClinicalNoteDto) {
+  updateNote(@Param('id') id: string, @Body() updateClinicalNoteDto: UpdateClinicalNoteDto) {
     return this.clinicalNotesService.update(id, updateClinicalNoteDto);
   }
 
   @Delete(':id')
-  RemoveNote(@Param('id') id: string) {
+  removeNote(@Param('id') id: string) {
     return this.clinicalNotesService.remove(id);
   }
 }

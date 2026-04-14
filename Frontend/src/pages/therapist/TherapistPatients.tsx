@@ -8,7 +8,7 @@ import { ClinicalHistoryModal } from "@/components/therapist/ClinicalHistoryModa
 import { SessionFormModal } from "@/components/coordinator/SessionFormModal";
 import { AddPatientModal } from "@/components/therapist/AddPatientModal";
 import { Grid3X3, List, UserPlus, ArrowRight } from "lucide-react";
-import type { PatientTherapist, ClinicalNote, Session, SessionFormData } from "@/types";
+import type { PatientTherapist, Session, SessionFormData } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useTherapistsApi } from "@/connections/api/therapists";
@@ -19,7 +19,6 @@ const TherapistPatients = () => {
   const { getTherapistPatients, getTherapistSessions, addPatient } = useTherapistsApi();
   const { createSession } = useSessionsApi();
   const [patients, setPatients] = useState<PatientTherapist[]>([]);
-  const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +43,7 @@ const TherapistPatients = () => {
         getTherapistPatients(user.id),
         getTherapistSessions(user.id)
       ]);
+      console.log(ptData);
       setPatients(ptData);
       setSessions(stData);
     } catch (err) {
@@ -89,11 +89,6 @@ const TherapistPatients = () => {
   const handleSchedule = (patient: PatientTherapist) => {
     setSessionPatient(patient);
     setSessionOpen(true);
-  };
-
-  const handleSaveNote = (note: ClinicalNote) => {
-    setNotes((prev) => [...prev, note]);
-    toast.success("Nota evolutiva guardada");
   };
 
   const handleSaveSession = async (formData: SessionFormData) => {
@@ -193,10 +188,12 @@ const TherapistPatients = () => {
         <NoteFormModal
           open={noteOpen}
           onOpenChange={setNoteOpen}
-          patient={notePatient as any} // we will need to update NoteFormModal later to fix type differences
+          patient={notePatient}
+          therapistId={user?.id}
           therapistName={user?.username || "Terapeuta"}
           sessions={sessions}
-          onSave={handleSaveNote}
+          onSaved={loadData}
+          isEdit={false}
         />
       )}
 
@@ -204,8 +201,8 @@ const TherapistPatients = () => {
         <ClinicalHistoryModal
           open={historyOpen}
           onOpenChange={setHistoryOpen}
-          patient={historyPatient as any}
-          notes={notes}
+          patient={historyPatient}
+          sessions={sessions}
         />
       )}
 
