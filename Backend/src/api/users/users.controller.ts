@@ -17,7 +17,7 @@ import { Role } from '@prisma/client';
 
 @Controller('users')
 @UseGuards(RolesGuard)
-@Roles(Role.COORDINATOR, Role.THERAPIST)
+@Roles(Role.COORDINATOR)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -25,7 +25,7 @@ export class UsersController {
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
-  
+  @Roles(Role.COORDINATOR, Role.THERAPIST)
   @Get()
   findAll() {
     return this.usersService.findAll();
