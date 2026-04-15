@@ -3,13 +3,19 @@ import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { PrismaService } from 'src/database/prisma.service';
 import { Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 @Injectable()
 export class SessionsService {
-  constructor(private readonly prisma:PrismaService){}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
-  createSession(createSessionDto: CreateSessionDto) {
-    return this.prisma.session.create({
+  async createSession(createSessionDto: CreateSessionDto) {
+    const session = await this.prisma.session.create({
       data: {
         therapistId: createSessionDto.therapistId,
         patientId: createSessionDto.patientId,
@@ -54,6 +60,27 @@ export class SessionsService {
         },
       },
     });
+
+    // Crear notificaciones para paciente y terapeuta
+    const formattedDate = format(new Date(session.startTime), "d 'de' MMMM 'a las' HH:mm", { locale: es });
+
+    // Notificación al paciente
+    await this.notificationsService.create(session.patient.userId, {
+      userId: session.patient.userId,
+      type: 'CONFIRMATION',
+      message: `Nueva sesión programada con ${session.therapist.user.username} para el ${formattedDate}`,
+      status: 'SENT',
+    });
+
+    // Notificación al terapeuta
+    await this.notificationsService.create(session.therapist.userId, {
+      userId: session.therapist.userId,
+      type: 'CONFIRMATION',
+      message: `Nueva sesión programada con ${session.patient.user.username} para el ${formattedDate}`,
+      status: 'SENT',
+    });
+
+    return session;
   }
 
   getSessions() {
@@ -126,6 +153,8 @@ export class SessionsService {
     if (!existing) throw new NotFoundException(`Session ${id} no encontrada`);
 
     const data: Prisma.SessionUpdateInput = {};
+    let statusChanged = false;
+    let timeChanged = false;
 
     if (updateSessionDto.therapistId !== undefined) {
       data.therapist = { connect: { id: updateSessionDto.therapistId } };
@@ -135,6 +164,7 @@ export class SessionsService {
     }
     if (updateSessionDto.startTime !== undefined) {
       data.startTime = updateSessionDto.startTime;
+      timeChanged = true;
     }
     if (updateSessionDto.endTime !== undefined) {
       data.endTime = updateSessionDto.endTime;
@@ -144,6 +174,7 @@ export class SessionsService {
     }
     if (updateSessionDto.status !== undefined) {
       data.status = updateSessionDto.status;
+      statusChanged = existing.status !== updateSessionDto.status;
     }
 
     if (updateSessionDto.notes !== undefined) {
@@ -160,7 +191,7 @@ export class SessionsService {
       };
     }
 
-    return this.prisma.session.update({
+    const updatedSession = await this.prisma.session.update({
       where: { id },
       data,
       include: {
@@ -191,6 +222,43 @@ export class SessionsService {
         notes: true,
       },
     });
+
+    // Crear notificaciones según el cambio
+    const formattedDate = format(new Date(updatedSession.startTime), "d 'de' MMMM 'a las' HH:mm", { locale: es });
+
+    if (statusChanged && updateSessionDto.status === 'CANCELED') {
+      // Notificación de cancelación
+      await this.notificationsService.create(updatedSession.patient.userId, {
+        userId: updatedSession.patient.userId,
+        type: 'CANCELLATION',
+        message: `La sesión del ${formattedDate} con ${updatedSession.therapist.user.username} ha sido cancelada`,
+        status: 'SENT',
+      });
+
+      await this.notificationsService.create(updatedSession.therapist.userId, {
+        userId: updatedSession.therapist.userId,
+        type: 'CANCELLATION',
+        message: `La sesión del ${formattedDate} con ${updatedSession.patient.user.username} ha sido cancelada`,
+        status: 'SENT',
+      });
+    } else if (timeChanged) {
+      // Notificación de cambio de horario
+      await this.notificationsService.create(updatedSession.patient.userId, {
+        userId: updatedSession.patient.userId,
+        type: 'REMINDER',
+        message: `La sesión con ${updatedSession.therapist.user.username} ha sido reprogramada para el ${formattedDate}`,
+        status: 'SENT',
+      });
+
+      await this.notificationsService.create(updatedSession.therapist.userId, {
+        userId: updatedSession.therapist.userId,
+        type: 'REMINDER',
+        message: `La sesión con ${updatedSession.patient.user.username} ha sido reprogramada para el ${formattedDate}`,
+        status: 'SENT',
+      });
+    }
+
+    return updatedSession;
   }
 
   remove(id: string) {

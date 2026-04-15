@@ -1,29 +1,45 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody } from '@nestjs/websockets';
+import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { Server, Socket } from 'socket.io';
 
-@WebSocketGateway()
-export class NotificationsGateway {
+@WebSocketGateway({
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+    credentials: true,
+  },
+})
+export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+  @WebSocketServer()
+  server: Server;
+
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @SubscribeMessage('createNotification')
-  create(@MessageBody() userId: string, createNotificationDto: CreateNotificationDto) {
-    return this.notificationsService.create(userId,createNotificationDto);
+  afterInit() {
+    this.notificationsService.setGateway(this);
+    console.log('WebSocket Gateway initialized');
+  }
+
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('findAllNotifications')
-  findAll(@MessageBody() userId: string) {
+  async findAll(@MessageBody() userId: string) {
     return this.notificationsService.findAll(userId);
   }
 
-  @SubscribeMessage('findOneNotification')
-  findOne(@MessageBody() id: string , userId: string) {
-    return this.notificationsService.findOne(id, userId);
+  @SubscribeMessage('removeNotification')
+  async remove(@MessageBody() data: { id: string; userId: string }) {
+    return this.notificationsService.remove(data.id, data.userId);
   }
 
-  @SubscribeMessage('removeNotification')
-  remove(@MessageBody() id: string, userId: string) {
-    return this.notificationsService.remove(id, userId);
+  // Método para enviar notificaciones a un usuario específico
+  sendNotificationToUser(userId: string, notification: any) {
+    this.server.emit(`notification:${userId}`, notification);
   }
 }

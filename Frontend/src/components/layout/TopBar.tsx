@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { Bell, Settings } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationsModal } from "@/components/notifications/NotificationsModal";
 
 interface TopBarProps {
   userName: string;
@@ -43,10 +44,7 @@ export const TopBar = ({ userName, userRole }: TopBarProps) => {
 
       {/* Right: actions + avatar */}
       <div className="flex items-center gap-3">
-        <button className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors relative">
-          <Bell size={18} className="text-muted-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-status-pending rounded-full" />
-        </button>
+        <NotificationsModal />
         <div className="flex items-center gap-2.5 ml-2">
           <div className="text-right">
             <p className="text-sm font-medium text-foreground leading-tight">{userName}</p>
