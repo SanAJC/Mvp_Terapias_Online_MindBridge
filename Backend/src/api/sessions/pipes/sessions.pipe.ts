@@ -87,9 +87,13 @@ export class SessionsUpdatePipe
   constructor(private readonly prisma: PrismaService) {}
 
   async transform(value: UpdateSessionDto): Promise<UpdateSessionDto> {
-    if (value.startTime !== undefined) {
+    // Solo validar fechas pasadas si se están reprogramando ambas fechas
+    // Esto permite actualizar el estado de sesiones pasadas sin problemas
+    if (value.startTime !== undefined && value.endTime !== undefined) {
       assertStartTimeNotPastDay(value.startTime);
+      assertEndTimeAfterStartTime(value.startTime, value.endTime);
     }
+
     if (value.therapistId !== undefined) {
       await this.assertTherapist(value.therapistId);
     }
