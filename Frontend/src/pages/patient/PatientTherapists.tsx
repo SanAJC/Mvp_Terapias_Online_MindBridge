@@ -9,6 +9,7 @@ import { usePatientsApi } from "@/connections/api/patients";
 import type { PatientTherapist, Session } from "@/types";
 import { toast } from "sonner";
 import { getTranslatedErrorMessage } from "@/lib/errorHandler";
+import { ScheduleSessionModal } from "@/components/patient/ScheduleSessionModal";
 
 const PatientTherapists = () => {
   const { user } = useAuth();
@@ -16,6 +17,8 @@ const PatientTherapists = () => {
   const [therapists, setTherapists] = useState<PatientTherapist[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [selectedTherapist, setSelectedTherapist] = useState<PatientTherapist | null>(null);
 
   const loadData = async () => {
     try {
@@ -56,6 +59,12 @@ const PatientTherapists = () => {
       hour12: true
     });
   };
+
+  const handleScheduleClick = (therapist: PatientTherapist) => {
+    setSelectedTherapist(therapist);
+    setScheduleModalOpen(true);
+  };
+  
   return (
     <DashboardLayout
       role="PATIENT"
@@ -127,13 +136,13 @@ const PatientTherapists = () => {
                         <a href={nextSession.meetingLink} target="_blank" rel="noopener noreferrer">Unirse a Cita</a>
                       </button>
                     ) : (
-                      <button className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                      <button 
+                        onClick={() => handleScheduleClick(item)}
+                        className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                      >
                          Agendar Cita
                       </button>
                     )}
-                    <button className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                      Ver Perfil
-                    </button>
                   </div>
                 </motion.div>
               );
@@ -141,6 +150,13 @@ const PatientTherapists = () => {
           </div>
         </motion.div>
       </PageTransition>
+
+      {/* Modal de agendar sesión */}
+      <ScheduleSessionModal
+        open={scheduleModalOpen}
+        onOpenChange={setScheduleModalOpen}
+        therapist={selectedTherapist}
+      />
     </DashboardLayout>
   );
 };

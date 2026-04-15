@@ -7,13 +7,16 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import { usePatientsApi } from "@/connections/api/patients";
 import { useEffect, useState } from "react";
-import type { Session, SessionStatus } from "@/types";
+import type { Session, SessionStatus, PatientTherapist } from "@/types";
 import { toast } from "sonner";
 import { getTranslatedErrorMessage } from "@/lib/errorHandler";
+import { useNavigate } from "react-router-dom";
 const PatientDashboard = () => {
   const { user } = useAuth();
-  const { getPatientSessions } = usePatientsApi();
+  const navigate = useNavigate();
+  const { getPatientSessions, getPatientTherapists } = usePatientsApi();
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [therapists, setTherapists] = useState<PatientTherapist[]>([]);
   const [loading, setLoading] = useState(true);
 
   const statusMap = {
@@ -26,10 +29,14 @@ const PatientDashboard = () => {
   const loadPatientSessions = async () => {
     try {
       setLoading(true);
-      const data = await getPatientSessions(user.id);
-      setSessions(data);
+      const [sessionsData, therapistsData] = await Promise.all([
+        getPatientSessions(user.id),
+        getPatientTherapists(user.id)
+      ]);
+      setSessions(sessionsData);
+      setTherapists(therapistsData);
     } catch (error) {
-      toast.error(getTranslatedErrorMessage(error, "Error al cargar las sesiones"));
+      toast.error(getTranslatedErrorMessage(error, "Error al cargar los datos"));
     } finally {
       setLoading(false);
     }
@@ -195,26 +202,59 @@ const PatientDashboard = () => {
                     <Users size={18} className="text-accent" />
                     <h3 className="font-semibold text-foreground">Mis Terapeutas</h3>
                   </div>
-                  <div className="space-y-3">
-                    {[
-                      { name: "Dra. Eleanor Vance", type: "Terapia Cognitiva", initials: "EV" },
-                      { name: "Dr. Julián Rivas", type: "Psiquiatría General", initials: "JR" },
-                    ].map((t) => (
-                      <div key={t.name} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback className="bg-accent/10 text-accent text-sm font-medium">{t.initials}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{t.name}</p>
-                            <p className="text-xs text-muted-foreground">{t.type}</p>
+                  
+                  {loading ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      Cargando...
+                    </div>
+                  ) : therapists.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      <Users size={32} className="mx-auto mb-2 opacity-50" />
+                      <p>Aún no tienes terapeutas asignados</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {therapists.slice(0, 2).map((therapist) => {
+                        const initials = therapist.therapist.user.username
+                          .split(" ")
+                          .map(n => n[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase();
+                        
+                        return (
+                          <div key={therapist.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-10 h-10">
+                                <AvatarFallback className="bg-accent/10 text-accent text-sm font-medium">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {therapist.therapist.user.username}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {therapist.therapist.user.email}
+                                </p>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => navigate("/paciente/terapeutas")}
+                              className="text-xs text-accent font-medium hover:underline"
+                            >
+                              Ver perfil
+                            </button>
                           </div>
-                        </div>
-                        <button className="text-xs text-accent font-medium hover:underline">Ver perfil</button>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="mt-4 text-xs font-semibold uppercase tracking-wider text-accent hover:underline">
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  <button 
+                    onClick={() => navigate("/paciente/terapeutas")}
+                    className="mt-4 text-xs font-semibold uppercase tracking-wider text-accent hover:underline"
+                  >
                     Explorar especialistas →
                   </button>
                 </motion.div>
@@ -226,7 +266,7 @@ const PatientDashboard = () => {
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-semibold text-foreground">Historial de sesiones</h2>
               </div>
-              <div className="space-y-4 overflow-y-auto h-3/4">
+              <div className="space-y-4 overflow-y-auto h-3/2">
                 {sessions.map((item) => {
                   const statusColorMap: Record<SessionStatus, string> = {
                     COMPLETED: "hsl(var(--status-completed))",
@@ -248,9 +288,6 @@ const PatientDashboard = () => {
                 );
               })}
               </div>
-              <button className="w-full mt-5 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                Ver todo el historial
-              </button>
             </motion.div>
           </div>
         </motion.div>
