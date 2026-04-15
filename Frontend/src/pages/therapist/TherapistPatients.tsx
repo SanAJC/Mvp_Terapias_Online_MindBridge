@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageTransition, staggerContainer, fadeInUp } from "@/components/animations/PageTransition";
 import { PatientCard } from "@/components/shared/PatientCard";
+import { PatientRow } from "@/components/shared/PatientRow";
 import { NoteFormModal } from "@/components/therapist/NoteFormModal";
 import { ClinicalHistoryModal } from "@/components/therapist/ClinicalHistoryModal";
 import { SessionFormModal } from "@/components/coordinator/SessionFormModal";
@@ -14,25 +15,25 @@ import { useAuth } from "@/context/AuthContext";
 import { useTherapistsApi } from "@/connections/api/therapists";
 import { useSessionsApi } from "@/connections/api/sessions";
 
+type ViewMode = "grid" | "list";
+type StatusFilter = "all" | "active" | "inactive";
+
 const TherapistPatients = () => {
   const { user } = useAuth();
   const { getTherapistPatients, getTherapistSessions, addPatient } = useTherapistsApi();
   const { createSession } = useSessionsApi();
+
   const [patients, setPatients] = useState<PatientTherapist[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const [addPatientOpen, setAddPatientOpen] = useState(false);
-
-  // Note modal
   const [noteOpen, setNoteOpen] = useState(false);
   const [notePatient, setNotePatient] = useState<PatientTherapist | null>(null);
-
-  // History modal
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyPatient, setHistoryPatient] = useState<PatientTherapist | null>(null);
-
-  // Session modal
   const [sessionOpen, setSessionOpen] = useState(false);
   const [sessionPatient, setSessionPatient] = useState<PatientTherapist | null>(null);
 
@@ -41,9 +42,8 @@ const TherapistPatients = () => {
     try {
       const [ptData, stData] = await Promise.all([
         getTherapistPatients(user.id),
-        getTherapistSessions(user.id)
+        getTherapistSessions(user.id),
       ]);
-      console.log(ptData);
       setPatients(ptData);
       setSessions(stData);
     } catch (err) {
@@ -54,42 +54,27 @@ const TherapistPatients = () => {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      loadData();
-    }
+    if (user?.id) loadData();
   }, [user?.id]);
 
-  const handleAddPatientSubmit = async (patientId: string) => {
-    try {
-      await addPatient({ therapistId: user.id, patientId });
-      toast.success("Paciente añadido exitosamente");
-      await loadData();
-    } catch (err) {
-      toast.error("Error al añadir el paciente.");
-    }
-  };
+  // Filtrar por estado activo: tiene sesión SCHEDULED próxima
+  const filteredPatients = patients.filter((item) => {
+    if (statusFilter === "all") return true;
+    const hasUpcoming = sessions.some(
+      (s) => s.patientId === item.patient.id && s.status === "SCHEDULED"
+    );
+    return statusFilter === "active" ? hasUpcoming : !hasUpcoming;
+  });
 
   const getNextSessionForPatient = (patientProfileId: string) => {
-    const upcomingSessions = sessions
-      .filter(s => s.status === "SCHEDULED" && s.patientId === patientProfileId)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-    return upcomingSessions[0] || null;
+    return sessions
+      .filter((s) => s.status === "SCHEDULED" && s.patientId === patientProfileId)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0] || null;
   };
 
-  const handleAddNote = (patient: PatientTherapist) => {
-    setNotePatient(patient);
-    setNoteOpen(true);
-  };
-
-  const handleViewHistory = (patient: PatientTherapist) => {
-    setHistoryPatient(patient);
-    setHistoryOpen(true);
-  };
-
-  const handleSchedule = (patient: PatientTherapist) => {
-    setSessionPatient(patient);
-    setSessionOpen(true);
-  };
+  const handleAddNote = (patient: PatientTherapist) => { setNotePatient(patient); setNoteOpen(true); };
+  const handleViewHistory = (patient: PatientTherapist) => { setHistoryPatient(patient); setHistoryOpen(true); };
+  const handleSchedule = (patient: PatientTherapist) => { setSessionPatient(patient); setSessionOpen(true); };
 
   const handleSaveSession = async (formData: SessionFormData) => {
     try {
@@ -103,46 +88,74 @@ const TherapistPatients = () => {
     }
   };
 
+  const handleAddPatientSubmit = async (patientId: string) => {
+    try {
+      await addPatient({ therapistId: user.id, patientId });
+      toast.success("Paciente añadido exitosamente");
+      await loadData();
+    } catch (err) {
+      toast.error("Error al añadir el paciente.");
+    }
+  };
+
   return (
-    <DashboardLayout
-      role="THERAPIST"
-      userName={user?.username || "Terapeuta"}
-      userRole="Psicólogo"
-    >
+    <DashboardLayout role="THERAPIST" userName={user?.username || "Terapeuta"} userRole="Psicólogo">
       <PageTransition>
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
+          {/* Header */}
           <motion.div variants={fadeInUp} className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Mis Pacientes</h1>
               <p className="text-muted-foreground text-sm">Gestiona tu red de cuidado y el progreso clínico.</p>
             </div>
+            {/* View toggle */}
             <div className="flex items-center gap-2 bg-secondary rounded-lg p-1">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-card rounded-md shadow-sm">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === "grid" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:bg-card/50"
+                }`}
+              >
                 <Grid3X3 size={14} /> Cuadrícula
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-muted-foreground rounded-md hover:bg-card/50 transition-colors">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:bg-card/50"
+                }`}
+              >
                 <List size={14} /> Lista
               </button>
             </div>
           </motion.div>
 
-          {/* Filters */}
-          <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-6">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Filtrar por:</span>
-            {["Estado: Activos", "Tratamiento: Todos", "Fecha: Recientes"].map((filter) => (
-              <button key={filter} className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-secondary transition-colors">
-                {filter} ▾
+          {/* Filtro por estado */}
+          <motion.div variants={fadeInUp} className="flex items-center gap-3 mb-6">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Estado:</span>
+            {(["all", "active", "inactive"] as StatusFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  statusFilter === f
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border hover:bg-secondary"
+                }`}
+              >
+                {{ all: "Todos", active: "Activos", inactive: "Sin sesión" }[f]}
               </button>
             ))}
-            <span className="ml-auto text-sm text-accent font-medium">{patients.length} pacientes encontrados</span>
+            <span className="ml-auto text-sm text-accent font-medium">
+              {filteredPatients.length} pacientes
+            </span>
           </motion.div>
 
-          {/* Patient grid */}
-          <motion.div variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {loading ? (
-              <p className="col-span-full py-8 text-center text-muted-foreground">Cargando pacientes...</p>
-            ) : (
-              patients.map((item) => (
+          {/* Contenido */}
+          {loading ? (
+            <div className="py-16 text-center text-muted-foreground text-sm">Cargando pacientes...</div>
+          ) : viewMode === "grid" ? (
+            <motion.div variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredPatients.map((item) => (
                 <PatientCard
                   key={item.id}
                   item={item}
@@ -151,39 +164,56 @@ const TherapistPatients = () => {
                   onViewHistory={handleViewHistory}
                   onSchedule={handleSchedule}
                 />
-              ))
-            )}
-
-            {/* New patient card */}
-            <motion.div
-              variants={fadeInUp}
-              onClick={() => setAddPatientOpen(true)}
-              className="rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-8 text-center hover:border-accent/40 hover:bg-secondary/20 transition-colors cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-                <UserPlus size={20} className="text-muted-foreground" />
-              </div>
-              <h4 className="font-semibold text-foreground mb-1">Nuevo Paciente</h4>
-              <p className="text-sm text-muted-foreground mb-3">Registra un nuevo ingreso terapéutico en el sistema.</p>
-              <span className="text-sm text-accent font-medium flex items-center gap-1 hover:underline">
-                Comenzar registro <ArrowRight size={14} />
-              </span>
+              ))}
+              {/* Nueva tarjeta */}
+              <motion.div
+                variants={fadeInUp}
+                onClick={() => setAddPatientOpen(true)}
+                className="rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-8 text-center hover:border-accent/40 hover:bg-secondary/20 transition-colors cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
+                  <UserPlus size={20} className="text-muted-foreground" />
+                </div>
+                <h4 className="font-semibold text-foreground mb-1">Nuevo Paciente</h4>
+                <p className="text-sm text-muted-foreground mb-3">Registra un nuevo ingreso terapéutico.</p>
+                <span className="text-sm text-accent font-medium flex items-center gap-1 hover:underline">
+                  Comenzar registro <ArrowRight size={14} />
+                </span>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          ) : (
+            <motion.div variants={staggerContainer} className="space-y-2">
+              {filteredPatients.map((item) => (
+                <PatientRow key={item.id} item={item} />
+              ))}
+              {/* Nueva fila */}
+              <motion.div
+                variants={fadeInUp}
+                onClick={() => setAddPatientOpen(true)}
+                className="rounded-xl border-2 border-dashed border-border flex items-center gap-4 px-5 py-4 hover:border-accent/40 hover:bg-secondary/20 transition-colors cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                  <UserPlus size={18} className="text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Nuevo Paciente</p>
+                  <p className="text-xs text-muted-foreground">Registra un nuevo ingreso terapéutico.</p>
+                </div>
+                <ArrowRight size={16} className="ml-auto text-accent" />
+              </motion.div>
+            </motion.div>
+          )}
 
           {/* Pagination */}
           <motion.div variants={fadeInUp} className="flex items-center justify-between mt-8 pt-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">Mostrando <span className="font-semibold text-foreground">1 - {patients.length}</span> de <span className="font-semibold text-foreground">{patients.length}</span> pacientes</p>
-            <div className="flex items-center gap-1">
-              <button className="w-8 h-8 rounded-lg border border-border text-muted-foreground hover:bg-secondary transition-colors flex items-center justify-center">‹</button>
-              <button className="w-8 h-8 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">1</button>
-              <button className="w-8 h-8 rounded-lg border border-border text-muted-foreground hover:bg-secondary transition-colors flex items-center justify-center">›</button>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Mostrando <span className="font-semibold text-foreground">{filteredPatients.length}</span> de{" "}
+              <span className="font-semibold text-foreground">{patients.length}</span> pacientes
+            </p>
           </motion.div>
         </motion.div>
       </PageTransition>
 
-      {/* Modals */}
       {notePatient && (
         <NoteFormModal
           open={noteOpen}
@@ -214,10 +244,7 @@ const TherapistPatients = () => {
 
       <SessionFormModal
         open={sessionOpen}
-        onOpenChange={(open) => {
-          setSessionOpen(open);
-          if (!open) setSessionPatient(null);
-        }}
+        onOpenChange={(open) => { setSessionOpen(open); if (!open) setSessionPatient(null); }}
         session={null}
         prefilledTherapistId={user?.id}
         prefilledPatientId={sessionPatient?.patient.userId}
