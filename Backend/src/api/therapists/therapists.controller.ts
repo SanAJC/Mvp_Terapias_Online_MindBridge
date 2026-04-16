@@ -10,7 +10,7 @@ import { TherapistIdPipe } from './pipes/therapist-id.pipe';
 
 @Controller('therapists')
 @UseGuards(RolesGuard)
-@Roles(Role.THERAPIST)
+@Roles(Role.THERAPIST,Role.COORDINATOR)
 export class TherapistsController {
   constructor(private readonly therapistsService: TherapistsService) {}
 
