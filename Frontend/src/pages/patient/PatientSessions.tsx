@@ -191,17 +191,6 @@ const PatientSessions = () => {
                             Unirse a videollamada
                           </a>
                         )}
-                        {session.status === "COMPLETED" && (
-                          <button className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                            <FileText size={14} />
-                            Ver notas de sesión
-                          </button>
-                        )}
-                        {session.status === "SCHEDULED" && !session.meetingLink && (
-                          <button className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition-colors">
-                            Ver indicaciones
-                          </button>
-                        )}
                       </div>
                     </motion.div>
                   );

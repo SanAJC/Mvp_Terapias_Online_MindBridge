@@ -1,4 +1,5 @@
 import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { UsersModule } from './api/users/users.module';
 import { PatientsModule } from './api/patients/patients.module';
 import { TherapistsModule } from './api/therapists/therapists.module';
@@ -14,6 +15,11 @@ import { RbacModule } from './auth/rbac.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      name: 'default',
+      ttl: 60000,
+      limit: 10,
+    }]),
     RbacModule,
     AuthModule,
     UsersModule,

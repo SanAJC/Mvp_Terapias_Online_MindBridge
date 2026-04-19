@@ -5,10 +5,13 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { PatientsPipe } from './pipes/patients.pipe';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { Throttle } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('patients')
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, ThrottlerGuard)
 @Roles(Role.PATIENT, Role.COORDINATOR)
+@Throttle( { default: {ttl: 60000, limit: 100}})
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 

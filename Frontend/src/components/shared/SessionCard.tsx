@@ -76,21 +76,11 @@ export const SessionCard = ({ session, variant = "therapist" }: SessionCardProps
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {session.status === "COMPLETED" && variant === "therapist" && (
-          <button className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors font-medium">
-            Ver Notas
-          </button>
-        )}
+      <div className="flex items-center gap-2"> 
         {session.status === "SCHEDULED" && isHighlighted && (
           <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium flex items-center gap-2">
             ▶ Iniciar sesión
           </a>
-        )}
-        {session.status === "SCHEDULED" && !isHighlighted && variant === "therapist" && (
-          <button className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors font-medium">
-            Preparar notas
-          </button>
         )}
       </div>
     </motion.div>

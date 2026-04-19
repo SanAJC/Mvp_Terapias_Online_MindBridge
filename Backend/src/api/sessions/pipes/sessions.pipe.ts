@@ -90,7 +90,6 @@ export class SessionsUpdatePipe
     // Solo validar fechas pasadas si se están reprogramando ambas fechas
     // Esto permite actualizar el estado de sesiones pasadas sin problemas
     if (value.startTime !== undefined && value.endTime !== undefined) {
-      assertStartTimeNotPastDay(value.startTime);
       assertEndTimeAfterStartTime(value.startTime, value.endTime);
     }
 

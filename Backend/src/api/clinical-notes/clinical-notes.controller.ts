@@ -5,10 +5,13 @@ import { UpdateClinicalNoteDto } from './dto/update-clinical-note.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('clinical-notes')
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, ThrottlerGuard)
 @Roles(Role.THERAPIST)
+@Throttle( { default: {ttl: 60000, limit: 100}})
 export class ClinicalNotesController {
   constructor(private readonly clinicalNotesService: ClinicalNotesService) {}
 

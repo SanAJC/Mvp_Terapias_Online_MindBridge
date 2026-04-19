@@ -7,10 +7,13 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { TherapistsPipe } from './pipes/therapits.pipe';
 import { TherapistIdPipe } from './pipes/therapist-id.pipe';
+import { Throttle } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('therapists')
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, ThrottlerGuard)
 @Roles(Role.THERAPIST,Role.COORDINATOR)
+@Throttle( { default: {ttl: 60000, limit: 100}})
 export class TherapistsController {
   constructor(private readonly therapistsService: TherapistsService) {}
 
@@ -19,7 +22,6 @@ export class TherapistsController {
     return this.therapistsService.addPatient(addPatientDto);
   }
 
-  // :id recibe userId → TherapistIdPipe lo convierte a profileId
   @Get(':id')
   getTherapist(@Param('id', TherapistIdPipe) id: string) {
     return this.therapistsService.getTherapist(id);
