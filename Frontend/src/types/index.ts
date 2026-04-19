@@ -53,6 +53,7 @@ export interface Session {
   startTime: string; // ISO-8601 desde el backend
   endTime: string;   // ISO-8601 desde el backend
   meetingLink: string;
+  isVirtual: boolean;
   status: SessionStatus;
   notes: ClinicalNote[];
   createdAt: string;
@@ -66,6 +67,7 @@ export interface SessionFormData {
   endTime: Date;
   meetingLink: string;
   status: SessionStatus;
+  isVirtual: boolean;
 }
 
 export interface ActivityItem {

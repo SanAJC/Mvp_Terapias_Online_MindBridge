@@ -23,6 +23,7 @@ export class SessionsService {
         endTime: createSessionDto.endTime,
         meetingLink: createSessionDto.meetingLink,
         status: createSessionDto.status,
+        isVirtual: createSessionDto.isVirtual,
         notes: createSessionDto.notes
           ? {
               create: createSessionDto.notes.map((note) => ({

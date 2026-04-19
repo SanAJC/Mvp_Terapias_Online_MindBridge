@@ -27,6 +27,7 @@ const emptyForm: SessionFormData = {
   endTime: new Date(),
   meetingLink: "",
   status: "SCHEDULED",
+  isVirtual: false,
 };
 
 export const SessionFormModal = ({ open, onOpenChange, session, prefilledTherapistId, prefilledPatientId, onSave }: SessionFormModalProps) => {
@@ -56,6 +57,7 @@ export const SessionFormModal = ({ open, onOpenChange, session, prefilledTherapi
         endTime: new Date(session.endTime),
         meetingLink: session.meetingLink || "",
         status: session.status,
+        isVirtual: session.isVirtual,
       });
     } else {
       setForm({
@@ -211,6 +213,19 @@ export const SessionFormModal = ({ open, onOpenChange, session, prefilledTherapi
                 value={form.meetingLink}
                 onChange={(e) => setForm({ ...form, meetingLink: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="isVirtual">¿Es sesión virtual?</Label>
+              <Select value={form.isVirtual ? "true" : "false"} onValueChange={(v) => setForm({ ...form, isVirtual: v === "true" })}>
+                <SelectTrigger id="isVirtual">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Sí</SelectItem>
+                  <SelectItem value="false">No</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

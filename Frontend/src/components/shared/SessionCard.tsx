@@ -83,9 +83,9 @@ export const SessionCard = ({ session, variant = "therapist" }: SessionCardProps
           </button>
         )}
         {session.status === "SCHEDULED" && isHighlighted && (
-          <button className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium flex items-center gap-2">
+          <a href={session.meetingLink} target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium flex items-center gap-2">
             ▶ Iniciar sesión
-          </button>
+          </a>
         )}
         {session.status === "SCHEDULED" && !isHighlighted && variant === "therapist" && (
           <button className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors font-medium">

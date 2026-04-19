@@ -134,6 +134,8 @@ model Session {
 
   meetingLink String?
 
+  isVirtual Boolean @default(false)
+
   status SessionStatus @default(SCHEDULED)
 
   notes      ClinicalNote[]
