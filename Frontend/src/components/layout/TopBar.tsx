@@ -1,11 +1,12 @@
 import { useLocation } from "react-router-dom";
-import { Bell, Settings } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsModal } from "@/components/notifications/NotificationsModal";
 
 interface TopBarProps {
   userName: string;
   userRole: string;
+  onMenuClick: () => void;
 }
 
 const breadcrumbMap: Record<string, { parent: string; current: string }> = {
@@ -21,32 +22,34 @@ const breadcrumbMap: Record<string, { parent: string; current: string }> = {
   "/paciente/terapeutas": { parent: "Terapeutas", current: "Mis Terapeutas" },
 };
 
-export const TopBar = ({ userName, userRole }: TopBarProps) => {
+export const TopBar = ({ userName, userRole, onMenuClick }: TopBarProps) => {
   const location = useLocation();
   const initials = userName.split(" ").map(n => n[0]).join("").slice(0, 2);
   const crumb = breadcrumbMap[location.pathname] || { parent: "Panel", current: "Dashboard" };
 
   return (
-    <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-20">
+    <header className="h-14 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20">
       {/* Left: hamburger icon + breadcrumb */}
       <div className="flex items-center gap-3">
-        <button className="flex flex-col justify-center gap-[3px] w-8 h-8 rounded-lg hover:bg-secondary transition-colors items-center">
-          <span className="block w-[18px] h-[2px] rounded-full bg-muted-foreground" />
-          <span className="block w-[14px] h-[2px] rounded-full bg-muted-foreground" />
-          <span className="block w-[10px] h-[2px] rounded-full bg-muted-foreground" />
+        <button 
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu size={20} className="text-muted-foreground" />
         </button>
         <nav className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">{crumb.parent}</span>
-          <span className="text-muted-foreground">›</span>
+          <span className="text-muted-foreground hidden sm:inline">{crumb.parent}</span>
+          <span className="text-muted-foreground hidden sm:inline">›</span>
           <span className="text-accent font-semibold">{crumb.current}</span>
         </nav>
       </div>
 
       {/* Right: actions + avatar */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <NotificationsModal />
         <div className="flex items-center gap-2.5 ml-2">
-          <div className="text-right">
+          <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-foreground leading-tight">{userName}</p>
             <p className="text-xs text-muted-foreground leading-tight">{userRole}</p>
           </div>

@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import type { UserRole } from "@/types";
@@ -18,6 +18,8 @@ export const DashboardLayout = ({
   userRole,
 }: DashboardLayoutProps) => {
     const { user } = useAuth();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     if(user?.role === "COORDINATOR") {
       userRole = "Coordinador";
     } else if(user?.role === "THERAPIST") {
@@ -25,12 +27,17 @@ export const DashboardLayout = ({
     } else {
       userRole = "Paciente";
     }
+
     return (
     <div className="min-h-screen bg-background">
-      <Sidebar role={role} />
-      <div className="ml-[200px]">
-        <TopBar userName={user?.username || userName} userRole={userRole} />
-        <main className="px-6 py-5">{children}</main>
+      <Sidebar role={role} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="lg:ml-[200px]">
+        <TopBar 
+          userName={user?.username || userName} 
+          userRole={userRole}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
+        <main className="px-4 py-5 sm:px-6">{children}</main>
       </div>
     </div>
   );
