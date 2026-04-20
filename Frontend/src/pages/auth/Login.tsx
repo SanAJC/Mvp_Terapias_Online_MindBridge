@@ -4,7 +4,7 @@ import { Logo } from "@/components/shared/Logo";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import authBg from "@/assets/auth-bg.jpg";
-import { useAuthApi } from "@/connections/api/Auth";
+import { useAuthApi } from "@/connections/api/auth";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);

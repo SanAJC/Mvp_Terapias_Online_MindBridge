@@ -5,7 +5,7 @@ import { User, Mail, Lock, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import authBg from "@/assets/auth-bg.jpg";
 import LegalModal from "@/components/shared/LegalModal";
-import { useAuthApi } from "@/connections/api/Auth";
+import { useAuthApi } from "@/connections/api/auth";
 import { toast } from "sonner";
 
 const Register = () => {

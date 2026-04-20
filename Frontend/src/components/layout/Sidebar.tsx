@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Logo } from "@/components/shared/Logo";
 import { LayoutDashboard, Calendar, Users, BarChart3, LogOut, Stethoscope, UserCircle } from "lucide-react";
 import type { UserRole } from "@/types";
-import { useAuthApi } from "@/connections/api/Auth";
+import { useAuthApi } from "@/connections/api/auth";
 interface SidebarProps {
   role: UserRole;
 }
