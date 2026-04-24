@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, HttpStatus, Post, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login';
 import { RegisterDto } from './dto/register';
@@ -20,6 +20,7 @@ export class AuthController {
   }
 
   @Throttle( { default: {ttl: 60000, limit: 5}})
+  @HttpCode(HttpStatus.OK)
   @Post('login')
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
