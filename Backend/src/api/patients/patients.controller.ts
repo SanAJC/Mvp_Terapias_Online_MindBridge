@@ -1,34 +1,44 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { PatientsService } from './patients.service';
-import { CreatePatientDto } from './dto/create-patient.dto';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { PatientsPipe } from './pipes/patients.pipe';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { Throttle } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('patients')
+@UseGuards(RolesGuard, ThrottlerGuard)
+@Roles(Role.PATIENT, Role.COORDINATOR)
+@Throttle( { default: {ttl: 60000, limit: 100}})
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 
-  @Post()
-  create(@Body() createPatientDto: CreatePatientDto) {
-    return this.patientsService.create(createPatientDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.patientsService.findAll();
-  }
-
+  // :id recibe userId → PatientsPipe lo convierte a profileId
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.patientsService.findOne(+id);
+  getPatient(@Param('id', PatientsPipe) id: string) {
+    return this.patientsService.getPatient(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePatientDto: UpdatePatientDto) {
-    return this.patientsService.update(+id, updatePatientDto);
+  @Roles(Role.PATIENT)
+  updatePatient(@Param('id', PatientsPipe) id: string, @Body() dto: UpdatePatientDto) {
+    return this.patientsService.updatePatient(id, dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.patientsService.remove(+id);
+  @Get(':id/clinical-notes')
+  getClinicalNotes(@Param('id', PatientsPipe) id: string) {
+    return this.patientsService.getClinicalNotes(id);
+  }
+
+  @Get(':id/sessions')
+  getSessions(@Param('id', PatientsPipe) id: string) {
+    return this.patientsService.getSessions(id);
+  }
+
+  @Get(':id/therapists')
+  getTherapists(@Param('id', PatientsPipe) id: string) {
+    return this.patientsService.getTherapists(id);
   }
 }

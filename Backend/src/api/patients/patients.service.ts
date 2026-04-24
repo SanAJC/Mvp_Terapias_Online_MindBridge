@@ -1,26 +1,94 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePatientDto } from './dto/create-patient.dto';
+import { PrismaService } from 'src/database/prisma.service';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 
 @Injectable()
 export class PatientsService {
-  create(createPatientDto: CreatePatientDto) {
-    return 'This action adds a new patient';
+  constructor(private readonly prisma: PrismaService) {}
+
+  getPatient(id: string) {
+    return this.prisma.patientProfile.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, role: true },
+        },
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all patients`;
+  updatePatient(id: string, dto: UpdatePatientDto) {
+    return this.prisma.patientProfile.update({
+      where: { id },
+      data: {
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+        phone: dto.phone,
+      },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, role: true },
+        },
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} patient`;
+  getClinicalNotes(id: string) {
+    return this.prisma.clinicalNote.findMany({
+      where: { patientId: id },
+    });
   }
 
-  update(id: number, updatePatientDto: UpdatePatientDto) {
-    return `This action updates a #${id} patient`;
+  getSessions(id: string) {
+    return this.prisma.session.findMany({
+      where: { patientId: id },
+      include: {
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+        patient: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { startTime: 'desc' },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} patient`;
+  getTherapists(id: string) {
+    return this.prisma.patientTherapist.findMany({
+      where: { patientId: id },
+      include: {
+        therapist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
   }
+    
 }
