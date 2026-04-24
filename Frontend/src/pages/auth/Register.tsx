@@ -11,10 +11,10 @@ import { toast } from "sonner";
 const Register = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedHipaa, setAcceptedHipaa] = useState(false);
-  const [legalModal, setLegalModal] = useState<"privacy" | "terms" | "hipaa" | null>(null);
+  
+  const [legalModal, setLegalModal] = useState<"privacy" | "terms" | null>(null);
 
-  const allAccepted = acceptedTerms && acceptedPrivacy && acceptedHipaa;
+  const allAccepted = acceptedTerms && acceptedPrivacy ;
   const { handleRegister, loading, error } = useAuthApi();
 
   const [username, setUsername] = useState("");
@@ -151,16 +151,6 @@ const Register = () => {
                   Acepto la{" "}
                   <button type="button" onClick={() => setLegalModal("privacy")} className="text-accent hover:underline font-medium">
                     Política de Privacidad
-                  </button>
-                </span>
-              </label>
-
-              <label className="flex items-start gap-2.5 text-sm text-muted-foreground cursor-pointer">
-                <input type="checkbox" checked={acceptedHipaa} onChange={(e) => setAcceptedHipaa(e.target.checked)} className="w-4 h-4 rounded border-border text-primary focus:ring-primary mt-0.5 shrink-0" />
-                <span>
-                  Acepto el{" "}
-                  <button type="button" onClick={() => setLegalModal("hipaa")} className="text-accent hover:underline font-medium">
-                    Cumplimiento HIPAA
                   </button>
                 </span>
               </label>

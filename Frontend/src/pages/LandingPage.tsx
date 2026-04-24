@@ -9,7 +9,6 @@ import LegalModal from "@/components/shared/LegalModal";
 const features = [
   { icon: ChartLine, title: "Seguimiento de progreso", desc: "Realiza un seguimiento de tu progreso terapéutico y alcanza tus metas de bienestar." },
   { icon: Video, title: "Sessiones", desc: "Sesiones virtuales seguras con tu terapeuta desde la comodidad de tu hogar." },
-  { icon: ShieldCheck, title: "Privacidad Total", desc: "Cumplimiento HIPAA y encriptación de datos para proteger tu información sensible." },
   { icon: Users, title: "Equipo Profesional", desc: "Red de terapeutas certificados especializados en diversas áreas de la salud mental." },
 ];
 
@@ -19,7 +18,7 @@ const fadeUp = {
 };
 
 const LandingPage = () => {
-  const [legalModal, setLegalModal] = useState<"privacy" | "terms" | "hipaa" | null>(null);
+  const [legalModal, setLegalModal] = useState<"privacy" | "terms" | null>(null);
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,13 +107,13 @@ const LandingPage = () => {
                 <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                   <ShieldCheck size={14} className="text-accent" />
                 </div>
-                <span>Certificación HIPAA</span>
+                <span>Terapeutas Certificados</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                   <Users size={14} className="text-accent" />
                 </div>
-                <span>+5,000 pacientes</span>
+                <span>+200 pacientes</span>
               </div>
             </div>
           </motion.div>
@@ -200,7 +199,7 @@ const LandingPage = () => {
 
       {/* Features */}
       <section id="features" className="py-24 bg-secondary/30">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center justify-center">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -219,7 +218,7 @@ const LandingPage = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {features.map((f, i) => (
               <motion.div
@@ -273,7 +272,6 @@ const LandingPage = () => {
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <button onClick={() => setLegalModal("privacy")} className="hover:text-foreground transition-colors">Política de Privacidad</button>
             <button onClick={() => setLegalModal("terms")} className="hover:text-foreground transition-colors">Términos de Servicio</button>
-            <button onClick={() => setLegalModal("hipaa")} className="hover:text-foreground transition-colors">Cumplimiento HIPAA</button>
           </div>
           <p className="text-xs text-muted-foreground">© 2026 MindBridge. Todos los derechos reservados.</p>
         </div>

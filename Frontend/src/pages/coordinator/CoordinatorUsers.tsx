@@ -167,11 +167,10 @@ const CoordinatorUsers = () => {
           </motion.div>
 
           {/* Table */}
-          <motion.div variants={fadeInUp} className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+          <motion.div variants={fadeInUp} className="bg-card rounded-xl border border-border overflow-hidden shadow-sm h-[500px] overflow-y-auto">
             <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-secondary/50 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               <div className="col-span-4">Usuario</div>
-              <div className="col-span-2">Rol</div>
-              <div className="col-span-3">Clínico / Carga</div>
+              <div className="col-span-3">Rol</div>
               <div className="col-span-2">Estado</div>
               <div className="col-span-1">Acciones</div>
             </div>
@@ -189,11 +188,8 @@ const CoordinatorUsers = () => {
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-3">
                     <span className={`status-badge text-xs ${roleBadge[user.role]}`}>{roleLabel[user.role]}</span>
-                  </div>
-                  <div className="col-span-3 text-sm text-muted-foreground">
-                    {user.role === "THERAPIST" ? "12 Pacientes" : user.role === "PATIENT" ? "Dr. Aris Thorne" : "—"}
                   </div>
                   <div className="col-span-2">
                     <span className={`flex items-center gap-1.5 text-xs font-medium ${user.isActive ? "text-status-active" : "text-status-pending"}`}>

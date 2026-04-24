@@ -129,8 +129,6 @@ const Login = () => {
           <div className="flex items-center justify-center gap-4 mt-8 text-xs text-muted-foreground">
             <a href="#" className="hover:underline">Política de Privacidad</a>
             <span>•</span>
-            <a href="#" className="hover:underline">Cumplimiento HIPAA</a>
-            <span>•</span>
             <a href="#" className="hover:underline">Ayuda</a>
           </div>
         </div>
