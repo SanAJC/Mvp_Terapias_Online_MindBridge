@@ -1,0 +1,56 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - README.md
+      - docs/**
+      - .gitignore
+      - .git/**
+      - .github/**
+      - .vscode/**
+
+variables:
+  - group: mvp-secrets
+  - name: IMAGE_TAG
+    value: $(Build.BuildId)
+
+stages:
+  - stage: Build
+    displayName: "Build & Push Docker Images"
+    jobs:
+      - job: BuildImages
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: Docker@2
+            displayName: "Login al ACR"
+            inputs:
+              command: login
+              containerRegistry: azure-service-connection
+
+          - task: Docker@2
+            displayName: "Build y Push Backend"
+            inputs:
+              command: buildAndPush
+              repository: backend
+              dockerfile: Backend/Dockerfile
+              buildContext: Backend
+              containerRegistry: azure-service-connection
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          - task: Docker@2
+            displayName: "Build y Push Frontend"
+            inputs:
+              command: buildAndPush
+              repository: frontend
+              dockerfile: Frontend/Dockerfile
+              buildContext: Frontend
+              arguments: '--build-arg VITE_BACKEND_URL=$(VITE_BACKEND_URL)'
+              containerRegistry: azure-service-connection
+              tags: |
+                $(IMAGE_TAG)
+                latest

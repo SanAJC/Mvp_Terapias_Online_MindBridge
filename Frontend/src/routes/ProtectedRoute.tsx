@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE } from "@/lib/config";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ export const refreshAccessToken = async () => {
   }
 
   try {
-    const response = await fetch("http://localhost:3000/api/auth/refresh", {
+    const response = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

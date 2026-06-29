@@ -2,7 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { User } from "@/types/index";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { axiosInstance } from "@/lib/axiosInstance";
 
 
 export const useAuthApi = () => {
@@ -15,7 +15,7 @@ export const useAuthApi = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post("http://localhost:3000/api/auth/login", {
+            const response = await axiosInstance.post("/auth/login", {
                 email,
                 password
             });
@@ -46,7 +46,7 @@ export const useAuthApi = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post("http://localhost:3000/api/auth/register", {
+            const response = await axiosInstance.post("/auth/register", {
                 username,
                 email,
                 password

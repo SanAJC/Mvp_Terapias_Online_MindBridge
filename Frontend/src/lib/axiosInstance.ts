@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-
-const API_BASE = "http://localhost:3000/api";
+import { API_BASE } from "@/lib/config";
 
 // Crear instancia de axios
 export const axiosInstance = axios.create({
