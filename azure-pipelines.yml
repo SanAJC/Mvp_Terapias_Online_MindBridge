@@ -43,13 +43,23 @@ stages:
                 latest
 
           - task: Docker@2
-            displayName: "Build y Push Frontend"
+            displayName: "Build Frontend"
             inputs:
-              command: buildAndPush
+              command: build
               repository: frontend
               dockerfile: Frontend/Dockerfile
               buildContext: Frontend
+              containerRegistry: acr-service-connection
               arguments: '--build-arg VITE_BACKEND_URL=$(VITE_BACKEND_URL)'
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          - task: Docker@2
+            displayName: "Push Frontend"
+            inputs:
+              command: push
+              repository: frontend
               containerRegistry: acr-service-connection
               tags: |
                 $(IMAGE_TAG)
