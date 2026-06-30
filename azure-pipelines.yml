@@ -95,7 +95,7 @@ stages:
   # STAGE 3: Deploy a Azure Container Apps
   - stage: Deploy
     displayName: "Deploy to Azure Container Apps"
-    dependsOn: Build
+    dependsOn: Migrate
     condition: succeeded()
     jobs:
       - deployment: DeployProduction
