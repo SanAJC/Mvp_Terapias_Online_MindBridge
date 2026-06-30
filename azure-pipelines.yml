@@ -65,7 +65,34 @@ stages:
               tags: |
                 $(IMAGE_TAG)
                 latest
-  # STAGE 2: Deploy a Azure Container Apps
+
+  # STAGE 2: Migraciones de base de datos
+  - stage: Migrate
+    displayName: "Run Database Migrations"
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: RunMigrations
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '20.x'
+            displayName: "Instalar Node.js"
+
+          - script: |
+              cd Backend
+              npm install
+            displayName: "Instalar dependencias"
+
+          - script: |
+              cd Backend
+              npx prisma migrate deploy
+            displayName: "Aplicar migraciones de Prisma"
+            env:
+              DATABASE_URL: $(DATABASE_URL)
+  # STAGE 3: Deploy a Azure Container Apps
   - stage: Deploy
     displayName: "Deploy to Azure Container Apps"
     dependsOn: Build
