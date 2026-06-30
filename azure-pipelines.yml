@@ -17,6 +17,7 @@ variables:
     value: $(Build.BuildId)
 
 stages:
+  # STAGE 1: Build & Push Docker Images
   - stage: Build
     displayName: "Build & Push Docker Images"
     jobs:
@@ -64,3 +65,47 @@ stages:
               tags: |
                 $(IMAGE_TAG)
                 latest
+  # STAGE 2: Deploy a Azure Container Apps
+  - stage: Deploy
+    displayName: "Deploy to Azure Container Apps"
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployProduction
+        displayName: "Deploy a produccion"
+        environment: production
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: "Deploy Backend"
+                  inputs:
+                    azureSubscription: azure-service-connection
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az containerapp update \
+                        --name backend-app \
+                        --resource-group rg-mvp-prod \
+                        --image acrmvp2024.azurecr.io/backend:$(IMAGE_TAG) \
+                        --set-env-vars \
+                          DATABASE_URL="$(DATABASE_URL)" \
+                          JWT_SECRET="$(JWT_SECRET)" \
+                          NODE_ENV="production" \
+                          PORT="3000" \
+                          FRONTEND_URL="$(FRONTEND_URL)"
+
+                - task: AzureCLI@2
+                  displayName: "Deploy Frontend"
+                  inputs:
+                    azureSubscription: azure-service-connection
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az containerapp update \
+                        --name frontend-app \
+                        --resource-group rg-mvp-prod \
+                        --image acrmvp2024.azurecr.io/frontend:$(IMAGE_TAG)
